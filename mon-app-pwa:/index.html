@@ -1,0 +1,431 @@
+
+<!-- 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Suivi de présence mensuelle</title>
+  <link rel="stylesheet" href="texteMensuel_Style.css">
+</head>
+<body>
+  <h1>Suivi Mensuel de Présence</h1>
+
+
+
+
+
+   Filtres 
+
+
+
+
+
+  
+  <div class="filters">
+    <label>Groupe :
+      <select id="groupe">
+        <option value="">-- Choisir un groupe --</option>
+        <option value="agate">Groupe Agate</option>
+        <option value="jaspe">Groupe Jaspe</option>
+        <option value="diamant">Groupe Diamant</option>
+        <option value="beryl">Groupe Beryl</option>
+        <option value="calcedoine">Groupe Calcedoine</option>
+        <option value="saphir">Groupe Saphir</option>
+      </select>
+    </label>
+
+    <label>Mois :
+      <select id="mois"></select>
+    </label>
+
+    <label>Année :
+      <select id="annee"></select>
+    </label>
+
+    <label>Réunion :
+      <select id="reunion">
+        <option value="Culte de dimanche">Culte de dimanche</option>
+        <option value="Survol doctrinal">Survol doctrinal</option>
+        <option value="Réunion GC">Réunion GC</option>
+        <option value="Réunion GP">Réunion GP</option>
+
+      </select>
+    </label>
+  </div>
+
+
+
+
+  Tableau
+
+
+
+
+
+  <div class="table-wrapper">
+    <table id="presenceTable">
+      <thead>
+        <tr id="header-row">
+          <th>Membre</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+      </tbody>
+    </table>
+  </div>
+
+  <script src="texteMensuel_Js.js"></script>
+</body>
+</html>
+-->
+
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon App PWA</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Une application web progressive moderne">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIk1vbiBBcHAgUFdBIiwKICAic2hvcnRfbmFtZSI6ICJNb25BcHAiLAogICJkZXNjcmlwdGlvbiI6ICJVbmUgYXBwbGljYXRpb24gd2ViIHByb2dyZXNzaXZlIG1vZGVybmUiLAogICJzdGFydF91cmwiOiAiLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzEzMTMyNSIsCiAgInRoZW1lX2NvbG9yIjogIiMyNTYzZWIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSGRwWkhSb1BTSTFNVElpSUdobGFXZG9kRDBpTlRFeUlqNDhjbVZqZENCM2FXUjBhRDBpTlRFeUlpQm9aV2xuYUhROUlqVXhNaUlnWm1sc2JEMGlJekkxTmpObFlpSXZQanh3WVhSb0lHUTlJazB5TlRZZ01UTTJZek0yTGpBZ01qSXROakVnTXprdE5qRWdNemt0TXpZdU1ETXlMVGN5TGprek1pMDNNaTA0TUhZdE16TmpNemt0TXpZdU1ETXlMVGM0TGprek16RXROamtnTXprdE5qRWdNemt0TXpZZ01qSXRNalV6V2lJZ1ptbHNeRDBpSTI1aVpHSm1abUlpTHo0OEwzTjJaejQ9IiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSGRwWkhSb1BTSTJOaUlnYUdWcFoyaDBQU0kyTmlJK1BISmxZM1FnZDJsa2RHZzlJalkySWlCb1pXbG5hSFE5SWpZMklpQm1hV3hzUFNJak1qVTJNMlZpSWk4K1BIQmhkR2dnWkQwaVRURTNJRGhqTmk0d0lEQWdNVEVnTmkwMklqRXlMUzAySURFeUxTMDBMamt5TFRZdU16TXROUzR4T1Mwd09DMHhOQ0F3TFRFZ05pMDJJekV5V2lJZ1ptbHNiRDBpSTNkb2FYUmxJaTgrUEM5emRtYytQQT09IiwKICAgICAgInNpemVzIjogIjY0eDY0IiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0sCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhkcFpIUm9QU0l4T1RJaUlHaGxhV2RvZEQwaU1Ua3lJajQ4Y21WamRDQjNhV1IwYUQwaU1Ua3lJaUJvWldsbmFIUTlJakU1TWlJZ1ptbHNiRDBpSXpJMU5qTmxZaUl2UGp4d1lYUm9JR1E5SWsweU5UWWdOVFpoTXpZdU1EQWdNall0TVRWdU1UQXROek11TWpVeE1qRXRNVEZvTFdFM0xqUWdMV0UzTGpRZ01DQXdNU0F3SUd0dU16TXVNelF0TVRjdU1qRTNNRFF0TXprdU9UWTNORGt0TXpVdU9UTTNPRGsyTFRJdU9UYzJNVGMzTlMweE1TNDVPRGc1TmpNdE16TXVPVGswTFRFd0xqZzVNVGc0T0MwNU5TNHlORGcyTWpNZ01qa3RNVEJoTWpRdU56VXhNU0F5TkM0M05URXhJREFnTURGcU1UZ3VNekV5TlNBM0xqSTFZamMxSURnNUxqRXhPRGN6SURFeU5TNHhNell6TlRZdU16Z3pPRGN6SURFMk1pNDNOalpwTFRVNExqZ3pNRGM0TDNWTU1qRTBJRGgzYXpZMUxqSXpPVFUzSURZMUxqSTBOVEUwSURBZ01ERWpJeUF6TlM0MExqSXlZemRoTWpRdU5qRXlNeUF5TkM0Mk1USXpJREFnTURFcE5qVXVNalEwT1M0M05UTXhNemN1TkRrMklqRXhMamd6TFRJdU1Ua3hPRFkwTFRNdU56TTVNVEUzTFRRdU1qa3lNaTFqSUMxeUx6NEljM1I1YkdVOUltWnBiR3c2SUdOdmNtRnNJQ1JtWm1ZaUx6NDhjR0YwYUNCa1BTSk5NakUwSURnMllqRXlMalVnTXpFdU5TQXhOUzQzT0RReUlEZ3hMamc0TURJZ09UTXVNeUF4TXpBdU5EWXlJREV5TUM0M01qQWdNVEE0TERBZ05UZ3VNekU0TjJNdE16Y3VNalkzTFRJMkxqRTFPVGN0TmpJdU1EWXhPRGdnTXpZaUx6ND04TDNOMlp6ND0iLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzI1NjNlYiIvPjxwYXRoIGQ9Ik0yNTYgNTZhMzYuMDAgMzYtMTVuMTAtNzMuMjUxMjEtMTFoLWE3LjQgLWE3LjQgMCAwIDEgMCBrbjMzLjM0LTE3LjIxNzA0LTM5Ljk2NzQ5LTM1LjkzNzg5Ni0yLjk3NjE3NzUtMTEuOTg4OTYzLTMzLjk5NC0xMC44OTE4ODgtOTUuMjQ4NjIzIDI5LTEwYTI0Ljc1MTEgMjQuNzUxMSAwIDAxajE4LjMxMjUgNy4yNWI3NSA4OS4xMTg3MyAxMjUuMTM2MzU2LjM4Mzg3MyAxNjIuNzY2aS01OC44MzA3OC91TDIxNCA4d2s2NS4yMzk1NyA2NS4yNDUxNCAwIDAxIyMgMzUuNGoyYzdhMjQuNjEyMyAyNC42MTIzIDAgMDEpNjUuMjQ0OS43NTMxMzc3LjQ5NiIxMS44My0yLjE5MTg2NC0zLjczOTExNy00LjI5MjItYyAtci8+PC9zdmc+">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #2563eb;
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .features {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .install-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .install-button:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+        }
+
+        .install-button:disabled {
+            background: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .status.success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .status.info {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .offline-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .offline-indicator.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-indicator" id="offlineIndicator">
+        📱 Mode hors ligne
+    </div>
+
+    <div class="container">
+        <div class="logo">📱</div>
+        <h1>Mon App PWA</h1>
+        <p class="subtitle">Une app moderne et rapide</p>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <strong>Installation rapide</strong><br>
+                <small>S'installe comme une vraie app</small>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📱</div>
+                <strong>Multi-plateforme</strong><br>
+                <small>Fonctionne sur tous les appareils</small>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔄</div>
+                <strong>Mode hors ligne</strong><br>
+                <small>Disponible même sans internet</small>
+            </div>
+        </div>
+
+        <button class="install-button" id="installButton">
+            📥 Installer l'application
+        </button>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Variables globales
+        let deferredPrompt;
+        let isInstalled = false;
+
+        // Elements DOM
+        const installButton = document.getElementById('installButton');
+        const statusDiv = document.getElementById('status');
+        const offlineIndicator = document.getElementById('offlineIndicator');
+
+        // Detection de l'installation
+        function checkIfInstalled() {
+            // Vérifie si l'app est en mode standalone (installée)
+            if (window.matchMedia('(display-mode: standalone)').matches || 
+                window.navigator.standalone === true) {
+                isInstalled = true;
+                installButton.textContent = '✅ Application installée';
+                installButton.disabled = true;
+                showStatus('Application déjà installée !', 'success');
+            }
+        }
+
+        // Gestion de l'événement beforeinstallprompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt déclenché');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            if (!isInstalled) {
+                installButton.style.display = 'block';
+                installButton.disabled = false;
+                showStatus('Prêt à installer ! Cliquez sur le bouton ci-dessus.', 'info');
+            }
+        });
+
+        // Fonction d'installation
+        async function installApp() {
+            if (!deferredPrompt) {
+                showStatus('Installation non disponible sur ce navigateur', 'info');
+                return;
+            }
+
+            try {
+                const result = await deferredPrompt.prompt();
+                console.log('Résultat de l\'installation:', result);
+
+                if (result.outcome === 'accepted') {
+                    showStatus('Installation réussie ! 🎉', 'success');
+                    installButton.textContent = '✅ Installé avec succès';
+                    installButton.disabled = true;
+                } else {
+                    showStatus('Installation annulée', 'info');
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'installation:', error);
+                showStatus('Erreur lors de l\'installation', 'info');
+            }
+
+            deferredPrompt = null;
+        }
+
+        // Affichage des messages de statut
+        function showStatus(message, type) {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // Gestion du mode hors ligne
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                offlineIndicator.classList.remove('show');
+            } else {
+                offlineIndicator.classList.add('show');
+            }
+        }
+
+        // Event listeners
+        installButton.addEventListener('click', installApp);
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        // Enregistrement du Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    // Service Worker inline pour éviter les fichiers externes
+                    const swCode = `
+                        const CACHE_NAME = 'mon-app-pwa-v1';
+                        const urlsToCache = [
+                            '/',
+                            '/offline.html'
+                        ];
+
+                        self.addEventListener('install', (event) => {
+                            event.waitUntil(
+                                caches.open(CACHE_NAME)
+                                    .then((cache) => cache.addAll(urlsToCache))
+                            );
+                        });
+
+                        self.addEventListener('fetch', (event) => {
+                            event.respondWith(
+                                caches.match(event.request)
+                                    .then((response) => {
+                                        if (response) {
+                                            return response;
+                                        }
+                                        return fetch(event.request);
+                                    })
+                            );
+                        });
+                    `;
+
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    
+                    const registration = await navigator.serviceWorker.register(swUrl);
+                    console.log('Service Worker enregistré:', registration);
+                    
+                    // Nettoie l'URL blob
+                    URL.revokeObjectURL(swUrl);
+                } catch (error) {
+                    console.error('Erreur Service Worker:', error);
+                }
+            });
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            checkIfInstalled();
+            updateOnlineStatus();
+            
+            // Instructions pour l'installation manuelle
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                setTimeout(() => {
+                    if (!deferredPrompt && !isInstalled) {
+                        showStatus('💡 Sur mobile : Menu > "Ajouter à l\'écran d\'accueil"', 'info');
+                    }
+                }, 2000);
+            }
+        });
+
+        // Animation au chargement
+        document.body.style.opacity = '0';
+        window.addEventListener('load', () => {
+            document.body.style.transition = 'opacity 0.5s ease';
+            document.body.style.opacity = '1';
+        });
+    </script>
+</body>
+</html>

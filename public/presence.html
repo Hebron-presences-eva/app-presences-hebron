@@ -1,0 +1,1427 @@
+
+<!-- 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Marquer Présence</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Animation d'arrière-plan */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .presence-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      animation: slideUp 0.8s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      padding: 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .header h2 {
+      color: white;
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+
+    .form-section {
+      padding: 2rem;
+      background: linear-gradient(145deg, #f8f9ff 0%, #e8ecff 100%);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #2d3748;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #4facfe;
+      box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .members-section {
+      background: white;
+      margin: 0 2rem 2rem;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .members-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .members-table th {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .members-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+
+    .members-table tr:hover {
+      background: linear-gradient(90deg, #f7fafc 0%, #edf2f7 100%);
+      transform: scale(1.02);
+    }
+
+    .member-name {
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 1.1rem;
+    }
+
+    .checkbox-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .custom-checkbox {
+      position: relative;
+      width: 30px;
+      height: 30px;
+    }
+
+    .custom-checkbox input[type="checkbox"] {
+      opacity: 0;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .checkmark {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .custom-checkbox input:checked + .checkmark {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      transform: scale(1.1);
+      box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+    }
+
+    .checkmark::after {
+      content: '✓';
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .custom-checkbox input:checked + .checkmark::after {
+      opacity: 1;
+    }
+
+    .present-row {
+      background: linear-gradient(90deg, #d4edda 0%, #c3e6cb 100%) !important;
+      border-left: 4px solid #28a745;
+    }
+
+    .buttons-section {
+      padding: 2rem;
+      background: linear-gradient(145deg, #f8f9ff 0%, #e8ecff 100%);
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.6s ease;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      width: 100%;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(79, 172, 254, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(79, 172, 254, 0.4);
+    }
+
+    .btn-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      color: white;
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn-accent:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #718096;
+      font-size: 1.2rem;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .presence-container {
+        margin: 0;
+        border-radius: 0;
+      }
+      
+      .header h2 {
+        font-size: 2rem;
+      }
+      
+      .btn-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .members-table th,
+      .members-table td {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Animation pour les lignes qui apparaissent */
+    .member-row {
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: slideInRow 0.5s ease-out forwards;
+    }
+
+    @keyframes slideInRow {
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="presence-container">
+    <div class="header">
+      <h2>📋 Feuille de Présence</h2>
+    </div>
+
+    <div class="form-section">
+      <div class="form-group">
+        <label for="datePresence">📅 Date de la réunion</label>
+        <input type="date" id="datePresence" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="reunionSelect">🎯 Type de réunion</label>
+        <select id="reunionSelect" class="form-control">
+          <option value="1">✝️ Culte de dimanche</option>
+          <option value="2">📖 Survole doctrinal</option>
+          <option value="3">👥 Groupe de Personne</option>
+          <option value="4">🌱 Groupe de Croissance</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="groupeSelect">👨‍👩‍👧‍👦 Groupe de croissance</label>
+        <select id="groupeSelect" class="form-control">
+          <option value="">-- Choisir un groupe --</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="members-section">
+      <div class="table-header">
+        Liste des Membres
+      </div>
+      <table class="members-table">
+        <thead>
+          <tr>
+            <th>👤 Membre</th>
+            <th>✅ Présent ?</th>
+          </tr>
+        </thead>
+        <tbody id="membreTableBody">
+          <tr>
+            <td colspan="2" class="empty-state">
+              Sélectionnez un groupe pour voir les membres
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="buttons-section">
+      <button id="enregistrerBtn" class="btn btn-primary">
+        <span class="loading" style="display: none;"></span>
+        ✅ Enregistrer la présence
+      </button>
+
+      <div class="btn-container">
+        <button id="moisBtn" class="btn btn-secondary">
+          📅 Présence du mois
+        </button>
+        <button id="anneeBtn" class="btn btn-accent">
+          📆 Présence de l'année
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Vérification de la connexion
+    const membreConnecte = JSON.parse(localStorage.getItem("membre"));
+    if (!membreConnecte) {
+      alert("Non connecté !");
+      window.location.href = "login.html";
+    }
+
+    // Charger les groupes dans le menu déroulant
+    function chargerGroupes() {
+      fetch("/api/groupes")
+        .then(res => res.json())
+        .then(groupes => {
+          const groupeSelect = document.getElementById("groupeSelect");
+          groupes.forEach(groupe => {
+            const option = document.createElement("option");
+            option.value = groupe.id;
+            option.textContent = groupe.nom;
+            groupeSelect.appendChild(option);
+          });
+        })
+        .catch(err => {
+          console.error("Erreur lors du chargement des groupes:", err);
+          alert("❌ Erreur lors du chargement des groupes");
+        });
+    }
+
+    const tableBody = document.getElementById("membreTableBody");
+
+    document.getElementById("groupeSelect").addEventListener("change", e => {
+      const groupe_id = e.target.value;
+      tableBody.innerHTML = "";
+
+      if (groupe_id) {
+        // Afficher un indicateur de chargement
+        tableBody.innerHTML = '<tr><td colspan="2" class="empty-state"><span class="loading"></span> Chargement des membres...</td></tr>';
+
+        fetch(`/api/membres?groupe_id=${groupe_id}`)
+          .then(res => res.json())
+          .then(data => {
+            tableBody.innerHTML = ""; // Vider l'indicateur de chargement
+            
+            if (data.length === 0) {
+              tableBody.innerHTML = '<tr><td colspan="2" class="empty-state">Aucun membre dans ce groupe</td></tr>';
+              return;
+            }
+
+            data.forEach((m, index) => {
+              setTimeout(() => {
+                const tr = document.createElement("tr");
+                tr.className = "member-row";
+                tr.style.animationDelay = `${index * 0.1}s`;
+                tr.innerHTML = `
+                  <td class="member-name">${m.nom}</td>
+                  <td class="checkbox-container">
+                    <label class="custom-checkbox">
+                      <input type="checkbox" data-id="${m.id}" />
+                      <span class="checkmark"></span>
+                    </label>
+                  </td>
+                `;
+                tableBody.appendChild(tr);
+
+                // Ajouter l'effet de présence quand la checkbox est cochée
+                const checkbox = tr.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', function() {
+                  if (this.checked) {
+                    tr.classList.add('present-row');
+                  } else {
+                    tr.classList.remove('present-row');
+                  }
+                });
+              }, index * 100);
+            });
+          })
+          .catch(err => {
+            console.error("Erreur lors du chargement des membres:", err);
+            tableBody.innerHTML = '<tr><td colspan="2" class="empty-state">❌ Erreur lors du chargement des membres</td></tr>';
+          });
+      } else {
+        tableBody.innerHTML = '<tr><td colspan="2" class="empty-state">Sélectionnez un groupe pour voir les membres</td></tr>';
+      }
+    });
+
+    document.getElementById("enregistrerBtn").addEventListener("click", () => {
+      const btn = document.getElementById("enregistrerBtn");
+      const loading = btn.querySelector('.loading');
+      const date = document.getElementById("datePresence").value;
+      const reunion_id = document.getElementById("reunionSelect").value;
+      const groupe_id = document.getElementById("groupeSelect").value;
+      const checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
+
+      const donnees = Array.from(checkboxes).map(cb => ({
+        membre_id: cb.dataset.id,
+        date_presence: date,
+        reunion_id
+      }));
+
+      if (!date) {
+        alert("Veuillez choisir une date.");
+        return;
+      }
+      if (donnees.length === 0) {
+        alert("Aucun membre sélectionné.");
+        return;
+      }
+
+      // Afficher le loading
+      loading.style.display = 'inline-block';
+      btn.disabled = true;
+
+      fetch("/api/presences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(donnees)
+      })
+        .then(res => res.json())
+        .then(result => {
+          localStorage.setItem("groupe", groupe_id);
+          localStorage.setItem("reunion", reunion_id);
+          localStorage.setItem("date", date);
+
+          loading.style.display = 'none';
+          btn.disabled = false;
+          alert("✅ Présences enregistrées avec succès !");
+        })
+        .catch(err => {
+          loading.style.display = 'none';
+          btn.disabled = false;
+          alert("❌ Erreur lors de l'enregistrement");
+          console.error(err);
+        });
+    });
+
+    // Bouton Présence du mois
+    document.getElementById("moisBtn").addEventListener("click", () => {
+      const today = new Date();
+      const mois = today.getMonth() + 1;
+      const annee = today.getFullYear();
+      const groupeId = document.getElementById("groupeSelect").value;
+
+      if (!groupeId) {
+        alert("Veuillez choisir un groupe");
+        return;
+      }
+
+      window.location.href = `texteMensuel.html?groupe=${groupeId}&mois=${mois}&annee=${annee}`;
+    });
+
+    // Bouton Présence de l'année
+    
+   
+    document.getElementById("anneeBtn").addEventListener("click", () => {
+      const today = new Date();
+      const mois = today.getMonth() + 1;
+      const annee = today.getFullYear();
+      const groupeId = document.getElementById("groupeSelect").value;
+
+      if (!groupeId) {
+        alert("Veuillez choisir un groupe");
+        return;
+      }
+
+      window.location.href = `texteMensuel.html?groupe=${groupeId}&mois=${mois}&annee=${annee}`;
+    });
+
+
+    // Initialiser les données au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+      chargerGroupes();
+      
+      // Définir la date d'aujourd'hui par défaut
+      const today = new Date();
+      const dateString = today.toISOString().split('T')[0];
+      document.getElementById('datePresence').value = dateString;
+    });
+  </script>
+</body>
+</html>
+
+-->
+
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marquer Présence</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 0.5rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Animation d'arrière-plan */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .presence-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      animation: slideUp 0.8s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      padding: 1.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .header h2 {
+      color: white;
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      font-weight: 700;
+      text-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+
+    .form-section {
+      padding: 1rem;
+      background: linear-gradient(145deg, #f8f9ff 0%, #e8ecff 100%);
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #2d3748;
+      font-weight: 600;
+      font-size: clamp(1rem, 2.5vw, 1.1rem);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: clamp(0.9rem, 2.5vw, 1rem);
+      background: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #4facfe;
+      box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .members-section {
+      background: white;
+      margin: 0 1rem 1rem;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+    }
+
+    .members-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .members-table th {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: clamp(0.8rem, 2vw, 1rem);
+    }
+
+    .members-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+      font-size: clamp(0.9rem, 2.5vw, 1rem);
+    }
+
+    .members-table tr:hover {
+      background: linear-gradient(90deg, #f7fafc 0%, #edf2f7 100%);
+      transform: scale(1.01);
+    }
+
+    .member-name {
+      font-weight: 600;
+      color: #2d3748;
+      word-break: break-word;
+    }
+
+    .checkbox-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .custom-checkbox {
+      position: relative;
+      width: clamp(25px, 5vw, 30px);
+      height: clamp(25px, 5vw, 30px);
+    }
+
+    .custom-checkbox input[type="checkbox"] {
+      opacity: 0;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .checkmark {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .custom-checkbox input:checked + .checkmark {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      transform: scale(1.1);
+      box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+    }
+
+    .checkmark::after {
+      content: '✓';
+      color: white;
+      font-weight: bold;
+      font-size: clamp(12px, 3vw, 16px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .custom-checkbox input:checked + .checkmark::after {
+      opacity: 1;
+    }
+
+    .present-row {
+      background: linear-gradient(90deg, #d4edda 0%, #c3e6cb 100%) !important;
+      border-left: 4px solid #28a745;
+    }
+
+    .buttons-section {
+      padding: 1rem;
+      background: linear-gradient(145deg, #f8f9ff 0%, #e8ecff 100%);
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      min-height: 48px; /* Meilleure accessibilité tactile */
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.6s ease;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 30px rgba(79, 172, 254, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(79, 172, 254, 0.4);
+    }
+
+    .btn-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      color: white;
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn-accent:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #718096;
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Animation pour les lignes qui apparaissent */
+    .member-row {
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: slideInRow 0.5s ease-out forwards;
+    }
+
+    @keyframes slideInRow {
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Responsive Design - Mobile First */
+    
+    /* Très petits écrans (320px et moins) */
+    @media (max-width: 320px) {
+      body {
+        padding: 0.25rem;
+      }
+      
+      .presence-container {
+        border-radius: 10px;
+      }
+      
+      .header {
+        padding: 1rem;
+      }
+      
+      .form-section, .buttons-section {
+        padding: 0.75rem;
+      }
+      
+      .members-section {
+        margin: 0 0.5rem 0.5rem;
+      }
+      
+      .members-table th,
+      .members-table td {
+        padding: 0.5rem 0.25rem;
+      }
+      
+      .form-group {
+        margin-bottom: 0.75rem;
+      }
+    }
+
+    /* Petits smartphones (375px - 480px) */
+    @media (min-width: 321px) and (max-width: 480px) {
+      .presence-container {
+        border-radius: 15px;
+      }
+      
+      .btn-container {
+        gap: 1rem;
+      }
+    }
+
+    /* Smartphones en paysage et petites tablettes (481px - 768px) */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .form-section {
+        padding: 1.25rem;
+      }
+      
+      .btn-container {
+        flex-direction: row;
+        gap: 1rem;
+      }
+      
+      .btn-container .btn {
+        flex: 1;
+      }
+      
+      .members-table th,
+      .members-table td {
+        padding: 1rem 0.75rem;
+      }
+    }
+
+    /* Tablettes (769px - 1024px) */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .presence-container {
+        margin: 1rem auto;
+      }
+      
+      .form-section {
+        padding: 1.5rem;
+      }
+      
+      .btn-container {
+        flex-direction: row;
+        gap: 1.5rem;
+      }
+      
+      .btn-container .btn {
+        flex: 1;
+      }
+      
+      .members-section {
+        margin: 0 1.5rem 1.5rem;
+      }
+    }
+
+    /* Écrans larges (1025px - 1440px) */
+    @media (min-width: 1025px) and (max-width: 1440px) {
+      body {
+        padding: 2rem;
+      }
+      
+      .presence-container {
+        margin: 2rem auto;
+      }
+      
+      .form-section, .buttons-section {
+        padding: 2rem;
+      }
+      
+      .members-section {
+        margin: 0 2rem 2rem;
+      }
+      
+      .btn-container {
+        flex-direction: row;
+        gap: 2rem;
+      }
+      
+      .btn-container .btn {
+        flex: 1;
+      }
+    }
+
+    /* Très grands écrans (1441px et plus) */
+    @media (min-width: 1441px) {
+      body {
+        padding: 3rem;
+      }
+      
+      .presence-container {
+        margin: 3rem auto;
+        max-width: 1000px;
+      }
+      
+      .header h2 {
+        font-size: 3rem;
+      }
+      
+      .form-section, .buttons-section {
+        padding: 2.5rem;
+      }
+      
+      .btn-container {
+        flex-direction: row;
+        gap: 2.5rem;
+      }
+    }
+
+    /* Mode paysage pour mobiles */
+    @media (max-height: 480px) and (orientation: landscape) {
+      .header {
+        padding: 1rem;
+      }
+      
+      .header h2 {
+        font-size: 1.5rem;
+      }
+      
+      .form-section, .buttons-section {
+        padding: 1rem;
+      }
+      
+      .form-group {
+        margin-bottom: 0.75rem;
+      }
+      
+      .empty-state {
+        padding: 1rem;
+      }
+    }
+
+    /* Accessibilité - Réduction des mouvements */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      
+      .header::before {
+        animation: none;
+      }
+    }
+
+    /* Mode sombre */
+    @media (prefers-color-scheme: dark) {
+      .form-section, .buttons-section {
+        background: linear-gradient(145deg, #2d3748 0%, #1a202c 100%);
+      }
+      
+      .form-group label {
+        color: #e2e8f0;
+      }
+      
+      .form-control {
+        background: #4a5568;
+        border-color: #718096;
+        color: white;
+      }
+      
+      .members-section {
+        background: #2d3748;
+      }
+      
+      .members-table td {
+        border-color: #4a5568;
+        color: #e2e8f0;
+      }
+      
+      .member-name {
+        color: #f7fafc;
+      }
+      
+      .empty-state {
+        color: #a0aec0;
+      }
+    }
+
+    /* High DPI displays */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      .checkmark::after {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="presence-container">
+    <div class="header">
+      <h2>📋 Feuille de Présence</h2>
+    </div>
+
+    <div class="form-section">
+      <div class="form-group">
+        <label for="datePresence">📅 Date de la réunion</label>
+        <input type="date" id="datePresence" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="reunionSelect">🎯 Type de réunion</label>
+        <select id="reunionSelect" class="form-control">
+          <option value="1">✝️ Culte de dimanche</option>
+          <option value="2">📖 Survole doctrinal</option>
+          <option value="3">👥 Groupe de Personne</option>
+          <option value="4">🌱 Groupe de Croissance</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="groupeSelect">👨‍👩‍👧‍👦 Groupe de croissance</label>
+        <select id="groupeSelect" class="form-control">
+          <option value="">-- Choisir un groupe --</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="members-section">
+      <div class="table-header">
+        Liste des Membres
+      </div>
+      <table class="members-table">
+        <thead>
+          <tr>
+            <th>👤 Membre</th>
+            <th>✅ Présent ?</th>
+          </tr>
+        </thead>
+        <tbody id="membreTableBody">
+          <tr>
+            <td colspan="2" class="empty-state">
+              Sélectionnez un groupe pour voir les membres
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="buttons-section">
+      <button id="enregistrerBtn" class="btn btn-primary">
+        <span class="loading" style="display: none;"></span>
+        ✅ Enregistrer la présence
+      </button>
+
+      <div class="btn-container">
+        <button id="moisBtn" class="btn btn-secondary">
+          📅 Présence du mois
+        </button>
+        <button id="anneeBtn" class="btn btn-accent">
+          📆 Présence de l'année
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Vérification de la connexion
+    const membreConnecte = JSON.parse(localStorage.getItem("membre"));
+    if (!membreConnecte) {
+      alert("Non connecté !");
+      window.location.href = "login.html";
+    }
+
+    // Charger les groupes dans le menu déroulant
+    function chargerGroupes() {
+      fetch("/api/groupes")
+        .then(res => res.json())
+        .then(groupes => {
+          const groupeSelect = document.getElementById("groupeSelect");
+          groupes.forEach(groupe => {
+            const option = document.createElement("option");
+            option.value = groupe.id;
+            option.textContent = groupe.nom;
+            groupeSelect.appendChild(option);
+          });
+        })
+        .catch(err => {
+          console.error("Erreur lors du chargement des groupes:", err);
+          alert("❌ Erreur lors du chargement des groupes");
+        });
+    }
+
+    const tableBody = document.getElementById("membreTableBody");
+
+    document.getElementById("groupeSelect").addEventListener("change", e => {
+      const groupe_id = e.target.value;
+      tableBody.innerHTML = "";
+
+      if (groupe_id) {
+        // Afficher un indicateur de chargement
+        tableBody.innerHTML = '<tr><td colspan="2" class="empty-state"><span class="loading"></span> Chargement des membres...</td></tr>';
+
+        fetch(`/api/membres?groupe_id=${groupe_id}`)
+          .then(res => res.json())
+          .then(data => {
+            tableBody.innerHTML = ""; // Vider l'indicateur de chargement
+            
+            if (data.length === 0) {
+              tableBody.innerHTML = '<tr><td colspan="2" class="empty-state">Aucun membre dans ce groupe</td></tr>';
+              return;
+            }
+
+            data.forEach((m, index) => {
+              setTimeout(() => {
+                const tr = document.createElement("tr");
+                tr.className = "member-row";
+                tr.style.animationDelay = `${index * 0.1}s`;
+                tr.innerHTML = `
+                  <td class="member-name">${m.nom}</td>
+                  <td class="checkbox-container">
+                    <label class="custom-checkbox">
+                      <input type="checkbox" data-id="${m.id}" />
+                      <span class="checkmark"></span>
+                    </label>
+                  </td>
+                `;
+                tableBody.appendChild(tr);
+
+                // Ajouter l'effet de présence quand la checkbox est cochée
+                const checkbox = tr.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', function() {
+                  if (this.checked) {
+                    tr.classList.add('present-row');
+                  } else {
+                    tr.classList.remove('present-row');
+                  }
+                });
+              }, index * 100);
+            });
+          })
+          .catch(err => {
+            console.error("Erreur lors du chargement des membres:", err);
+            tableBody.innerHTML = '<tr><td colspan="2" class="empty-state">❌ Erreur lors du chargement des membres</td></tr>';
+          });
+      } else {
+        tableBody.innerHTML = '<tr><td colspan="2" class="empty-state">Sélectionnez un groupe pour voir les membres</td></tr>';
+      }
+    });
+
+    document.getElementById("enregistrerBtn").addEventListener("click", () => {
+      const btn = document.getElementById("enregistrerBtn");
+      const loading = btn.querySelector('.loading');
+      const date = document.getElementById("datePresence").value;
+      const reunion_id = document.getElementById("reunionSelect").value;
+      const groupe_id = document.getElementById("groupeSelect").value;
+      const checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
+
+      const donnees = Array.from(checkboxes).map(cb => ({
+        membre_id: cb.dataset.id,
+        date_presence: date,
+        reunion_id
+      }));
+
+      if (!date) {
+        alert("Veuillez choisir une date.");
+        return;
+      }
+      if (donnees.length === 0) {
+        alert("Aucun membre sélectionné.");
+        return;
+      }
+
+      // Afficher le loading
+      loading.style.display = 'inline-block';
+      btn.disabled = true;
+
+      fetch("/api/presences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(donnees)
+      })
+        .then(res => res.json())
+        .then(result => {
+          localStorage.setItem("groupe", groupe_id);
+          localStorage.setItem("reunion", reunion_id);
+          localStorage.setItem("date", date);
+
+          loading.style.display = 'none';
+          btn.disabled = false;
+          alert("✅ Présences enregistrées avec succès !");
+        })
+        .catch(err => {
+          loading.style.display = 'none';
+          btn.disabled = false;
+          alert("❌ Erreur lors de l'enregistrement");
+          console.error(err);
+        });
+    });
+
+    // Bouton Présence du mois
+    document.getElementById("moisBtn").addEventListener("click", () => {
+      const today = new Date();
+      const mois = today.getMonth() + 1;
+      const annee = today.getFullYear();
+      const groupeId = document.getElementById("groupeSelect").value;
+
+      if (!groupeId) {
+        alert("Veuillez choisir un groupe");
+        return;
+      }
+
+      window.location.href = `texteMensuel.html?groupe=${groupeId}&mois=${mois}&annee=${annee}`;
+    });
+
+    // Bouton Présence de l'année
+    document.getElementById("anneeBtn").addEventListener("click", () => {
+      const today = new Date();
+      const mois = today.getMonth() + 1;
+      const annee = today.getFullYear();
+      const groupeId = document.getElementById("groupeSelect").value;
+
+      if (!groupeId) {
+        alert("Veuillez choisir un groupe");
+        return;
+      }
+
+      window.location.href = `presences_annuelles.html?groupe=${groupeId}&mois=${mois}&annee=${annee}`;
+    });
+
+    // Initialiser les données au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+      chargerGroupes();
+      
+      // Définir la date d'aujourd'hui par défaut
+      const today = new Date();
+      const dateString = today.toISOString().split('T')[0];
+      document.getElementById('datePresence').value = dateString;
+    });
+  </script>
+</body>
+</html>

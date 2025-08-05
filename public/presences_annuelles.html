@@ -1,0 +1,1002 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Présences Annuelles</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 1rem;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      animation: slideUp 0.8s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      padding: 2rem;
+      text-align: center;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 700;
+      text-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .filters {
+      padding: 1.5rem;
+      background: linear-gradient(145deg, #f8f9ff 0%, #e8ecff 100%);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filters label {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 0.9rem;
+    }
+
+    .filters select {
+      padding: 0.75rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: white;
+      transition: all 0.3s ease;
+    }
+
+    .filters select:focus {
+      outline: none;
+      border-color: #4facfe;
+      box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+    }
+
+    .btn-charger {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      align-self: end;
+    }
+
+    .btn-charger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+    }
+
+    .btn-charger:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .section {
+      margin: 2rem 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 3px solid #4facfe;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead th {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 1rem 0.5rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tbody td {
+      padding: 0.75rem 0.5rem;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    tbody td:first-child {
+      text-align: left;
+      font-weight: 600;
+      background: #f8f9ff;
+    }
+
+    tbody tr:hover {
+      background: linear-gradient(90deg, #f7fafc 0%, #edf2f7 100%);
+      transform: scale(1.01);
+    }
+
+    .present {
+      background: #d4edda !important;
+      color: #155724;
+      font-weight: bold;
+    }
+
+    .absent {
+      background: #f8d7da !important;
+      color: #721c24;
+      font-style: italic;
+    }
+
+    .vide {
+      color: #999;
+      background: #f8f9fa !important;
+    }
+
+    .total-column {
+      background: #e8f4f8 !important;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .stat-excellent {
+      background: #d4edda !important;
+      color: #155724;
+      font-weight: bold;
+    }
+
+    .stat-bon {
+      background: #fff3cd !important;
+      color: #856404;
+      font-weight: bold;
+    }
+
+    .stat-moyen {
+      background: #f8d7da !important;
+      color: #721c24;
+      font-weight: bold;
+    }
+
+    .loading, .error, .empty {
+      text-align: center;
+      padding: 2rem;
+      font-style: italic;
+    }
+
+    .loading {
+      color: #4facfe;
+    }
+
+    .error {
+      color: #e53e3e;
+      background: #fed7d7;
+    }
+
+    .empty {
+      color: #718096;
+    }
+
+    .message-erreur {
+      background: #fed7d7;
+      color: #e53e3e;
+      padding: 1rem;
+      margin: 1rem 1.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #e53e3e;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .debug-info {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #4facfe;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+      .container {
+        margin: 0;
+        border-radius: 0;
+      }
+      
+      table {
+        font-size: 0.8rem;
+      }
+      
+      thead th, tbody td {
+        padding: 0.5rem 0.25rem;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .filters {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .table-container {
+        overflow-x: auto;
+      }
+      
+      table {
+        min-width: 800px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 0.5rem;
+      }
+      
+      .header {
+        padding: 1rem;
+      }
+      
+      .section {
+        margin: 1rem 0.5rem;
+      }
+      
+      .filters {
+        padding: 1rem;
+      }
+      
+      table {
+        font-size: 0.75rem;
+        min-width: 700px;
+      }
+      
+      thead th, tbody td {
+        padding: 0.4rem 0.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Récapitulatif Annuel des Présences</h1>
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <label for="annee">📅 Année</label>
+        <select id="annee">
+          <option value="">-- Choisir une année --</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="groupe">👥 Groupe</label>
+        <select id="groupe">
+          <option value="">-- Choisir un groupe --</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="type">🎯 Type de réunion</label>
+        <select id="type">
+          <option value="">-- Tous les types --</option>
+          <option value="1">✝️ Culte de Dimanche</option>
+          <option value="2">📖 Survole Doctrinal</option>
+          <option value="3">👥 Groupe de Personne</option>
+          <option value="4">🌱 Groupe de Croissance</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <button id="btnCharger" class="btn-charger">
+          <span class="loading-spinner" style="display: none;"></span>
+          📈 Charger les données
+        </button>
+      </div>
+    </div>
+
+    <div id="messageErreur" class="message-erreur hidden"></div>
+
+    <div class="section">
+      <div class="section-title">
+        📅 Présences Mensuelles
+      </div>
+      <div class="table-container">
+        <table id="tableAnnuel">
+          <thead></thead>
+          <tbody>
+            <tr><td colspan="14" class="loading">Sélectionnez les paramètres et cliquez sur "Charger les données"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        📈 Statistiques par Membre
+      </div>
+      <div class="table-container">
+        <table id="tableStatistiques">
+          <thead>
+            <tr>
+              <th>👤 Membre</th>
+              <th>🏷️ Groupe</th>
+              <th>✅ Présences</th>
+              <th>📅 Total Réunions</th>
+              <th>📊 Taux (%)</th>
+              <th>🏆 Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6" class="loading">Aucune donnée chargée</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="debugInfo" class="debug-info">
+      <h4>🔍 Informations de Debug</h4>
+      <div id="debugContent">Prêt à charger les données...</div>
+    </div>
+  </div>
+
+  <script>
+    const PresencesAnnuelles = {
+      config: {
+        moisNoms: ["Jan", "Fév", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"],
+        currentYear: new Date().getFullYear(),
+        typeReunions: {
+          "1": "Culte de Dimanche",
+          "2": "Survole Doctrinal", 
+          "3": "Groupe de Personne",
+          "4": "Groupe de Croissance"
+        }
+      },
+      
+      elements: {},
+      data: { groupes: [], presences: [], membres: [] },
+
+      debug: function(message, data = null) {
+        console.log(`[PRESENCES-ANNUELLES] ${message}`, data);
+        if (this.elements.debugContent) {
+          const timestamp = new Date().toLocaleTimeString();
+          this.elements.debugContent.innerHTML += `<div><strong>${timestamp}</strong>: ${message}</div>`;
+          if (data) {
+            this.elements.debugContent.innerHTML += `<div style="margin-left: 20px; color: #666; font-size: 0.7rem;">${JSON.stringify(data, null, 2)}</div>`;
+          }
+          this.elements.debugContent.scrollTop = this.elements.debugContent.scrollHeight;
+        }
+      },
+
+      showError: function(message) {
+        if (this.elements.messageErreur) {
+          this.elements.messageErreur.textContent = message;
+          this.elements.messageErreur.classList.remove("hidden");
+        }
+        this.debug(`❌ ERREUR: ${message}`);
+      },
+
+      hideError: function() {
+        if (this.elements.messageErreur) {
+          this.elements.messageErreur.classList.add("hidden");
+        }
+      },
+
+      init: function() {
+        this.debug("🚀 Initialisation des présences annuelles");
+        
+        this.elements = {
+          anneeSelect: document.getElementById("annee"),
+          groupeSelect: document.getElementById("groupe"),
+          typeSelect: document.getElementById("type"),
+          tableAnnuel: document.getElementById("tableAnnuel"),
+          tableStatistiques: document.getElementById("tableStatistiques"),
+          btnCharger: document.getElementById("btnCharger"),
+          debugContent: document.getElementById("debugContent"),
+          messageErreur: document.getElementById("messageErreur")
+        };
+
+        const elementsManquants = Object.keys(this.elements).filter(key => !this.elements[key]);
+        if (elementsManquants.length > 0) {
+          this.showError(`Éléments DOM manquants: ${elementsManquants.join(', ')}`);
+          return;
+        }
+
+        this.initAnnees();
+        this.chargerGroupes();
+        this.attacherEvenements();
+      },
+
+      initAnnees: function() {
+        for (let y = this.config.currentYear - 3; y <= this.config.currentYear + 1; y++) {
+          const option = new Option(y, y);
+          this.elements.anneeSelect.append(option);
+        }
+        this.elements.anneeSelect.value = this.config.currentYear;
+        this.debug("📅 Années initialisées");
+      },
+
+      chargerGroupes: function() {
+        this.debug("🔄 Chargement des groupes...");
+        
+        fetch("/api/groupes")
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            return res.json();
+          })
+          .then(groupes => {
+            this.debug("✅ Groupes chargés:", groupes);
+            this.data.groupes = groupes;
+            
+            this.elements.groupeSelect.innerHTML = '<option value="">-- Choisir un groupe --</option>';
+            groupes.forEach(groupe => {
+              if (groupe.nom && groupe.id) {
+                this.elements.groupeSelect.append(new Option(groupe.nom, groupe.id));
+              }
+            });
+            
+            this.debug(`📋 ${groupes.length} groupes ajoutés`);
+          })
+          .catch(err => {
+            this.showError(`Impossible de charger les groupes: ${err.message}`);
+          });
+      },
+
+      attacherEvenements: function() {
+        this.elements.btnCharger.addEventListener("click", () => {
+          this.chargerPresenceAnnuelle();
+        });
+
+        [this.elements.anneeSelect, this.elements.groupeSelect, this.elements.typeSelect].forEach(element => {
+          element.addEventListener("change", () => {
+            if (this.elements.anneeSelect.value && this.elements.groupeSelect.value) {
+              // Auto-chargement optionnel
+              // this.chargerPresenceAnnuelle();
+            }
+          });
+        });
+
+        this.debug("🔗 Événements attachés");
+      },
+
+      chargerPresenceAnnuelle: function() {
+        const groupeId = this.elements.groupeSelect.value;
+        const annee = this.elements.anneeSelect.value;
+        const typeReunion = this.elements.typeSelect.value;
+
+        this.debug("📊 Début chargement:", { groupeId, annee, typeReunion });
+        this.hideError();
+
+        if (!groupeId || !annee) {
+          this.showError("Veuillez sélectionner un groupe et une année");
+          return;
+        }
+
+        this.afficherChargement();
+
+        // D'abord essayer l'endpoint qui était dans votre code original
+        this.essayerEndpointOriginal(groupeId, annee, typeReunion)
+          .then(data => {
+            this.debug("📥 Données finales:", data);
+            this.construireTableaux(data);
+          })
+          .catch(err => {
+            this.debug("❌ Endpoint original échoué, essai méthode alternative");
+            // Si ça ne marche pas, essayer de charger séparément
+            return this.chargerMembres(groupeId)
+              .then(() => this.chargerPresences(groupeId, annee, typeReunion))
+              .then(data => {
+                this.debug("📥 Données finales (méthode alternative):", data);
+                this.construireTableaux(data);
+              });
+          })
+          .catch(err => {
+            this.showError(`Erreur: ${err.message}`);
+            this.afficherErreurTableaux(err.message);
+          });
+      },
+
+      essayerEndpointOriginal: function(groupeId, annee, typeReunion) {
+        // Basé sur votre code HTML original
+        let url = `/api/presences/annuel?groupe=${groupeId}&annee=${annee}`;
+        
+        if (typeReunion) {
+          const typeMapping = {
+            "1": "culte",
+            "2": "survol", 
+            "3": "atelier",
+            "4": "croissance"
+          };
+          url += `&type=${typeMapping[typeReunion] || typeReunion}`;
+        }
+        
+        this.debug("🌐 URL Endpoint Original:", url);
+
+        return fetch(url)
+          .then(res => {
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            return res.json();
+          })
+          .then(data => {
+            this.debug("✅ Données endpoint original:", data);
+            
+            // Vérifier le format des données reçues
+            if (data.membres && data.donnees) {
+              return data; // Format déjà correct
+            } else if (data.membres && data.presences) {
+              // Convertir le format
+              this.data.membres = data.membres;
+              this.data.presences = data.presences;
+              return this.traiterDonnees(annee);
+            } else {
+              throw new Error("Format de données non reconnu");
+            }
+          });
+      },
+
+      chargerMembres: function(groupeId) {
+        this.debug("👥 Chargement membres du groupe:", groupeId);
+        
+        return fetch(`/api/membres?groupe_id=${groupeId}`)
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            return res.json();
+          })
+          .then(membres => {
+            this.debug("✅ Membres chargés:", membres);
+            this.data.membres = membres;
+            return membres;
+          });
+      },
+
+      chargerPresences: function(groupeId, annee, typeReunion) {
+        this.debug("📊 Chargement présences:", { groupeId, annee, typeReunion });
+        
+        // D'après votre code original, l'API semble être différente
+        // Essayons d'abord l'endpoint pour les données annuelles
+        let url = `/api/presences/annuel?groupe=${groupeId}&annee=${annee}`;
+        if (typeReunion) {
+          // Convertir l'ID numérique en nom pour l'API
+          const typeMapping = {
+            "1": "culte",
+            "2": "survol", 
+            "3": "atelier",
+            "4": "croissance"
+          };
+          const typeName = typeMapping[typeReunion] || typeReunion;
+          url += `&type=${typeName}`;
+        }
+        
+        this.debug("🌐 URL API (essai 1):", url);
+
+        return fetch(url)
+          .then(res => {
+            if (!res.ok) {
+              // Si l'endpoint annuel ne fonctionne pas, essayer l'endpoint standard
+              this.debug("⚠️ Endpoint annuel échoué, essai endpoint standard");
+              return this.essayerEndpointStandard(groupeId, annee, typeReunion);
+            }
+            return res.json();
+          })
+          .then(data => {
+            this.debug("✅ Données chargées:", data);
+            
+            // Si les données viennent de l'endpoint annuel, elles sont déjà formatées
+            if (data.membres && data.donnees) {
+              this.data.membres = data.membres;
+              return data;
+            }
+            
+            // Sinon, traiter les données brutes
+            this.data.presences = data;
+            return this.traiterDonnees(annee);
+          });
+      },
+
+      essayerEndpointStandard: function(groupeId, annee, typeReunion) {
+        // Essayer différentes variantes d'URL selon votre API
+        const urlVariantes = [
+          `/api/presences?groupe=${groupeId}&annee=${annee}${typeReunion ? `&reunion=${typeReunion}` : ''}`,
+          `/api/presences?group_id=${groupeId}&year=${annee}${typeReunion ? `&type=${typeReunion}` : ''}`,
+          `/api/presences/liste?groupe_id=${groupeId}&annee=${annee}${typeReunion ? `&reunion_id=${typeReunion}` : ''}`
+        ];
+
+        return this.essayerUrls(urlVariantes);
+      },
+
+      essayerUrls: function(urls) {
+        if (urls.length === 0) {
+          throw new Error("Aucune URL API fonctionnelle trouvée");
+        }
+
+        const url = urls[0];
+        this.debug("🌐 Essai URL:", url);
+
+        return fetch(url)
+          .then(res => {
+            if (!res.ok) {
+              if (urls.length > 1) {
+                this.debug("⚠️ URL échouée, essai suivante");
+                return this.essayerUrls(urls.slice(1));
+              }
+              throw new Error(`HTTP ${res.status}: ${res.statusText} - Toutes les URLs ont échoué`);
+            }
+            return res.json();
+          });
+      },
+
+      traiterDonnees: function(annee) {
+        this.debug("🔄 Traitement des données pour l'année:", annee);
+        
+        const membres = this.data.membres;
+        const presences = this.data.presences;
+        
+        // Vérifier le format des données
+        if (!Array.isArray(presences)) {
+          this.debug("⚠️ Format de présences inattendu:", presences);
+          throw new Error("Format de données présences invalide");
+        }
+        
+        // Organiser les présences par mois et par membre
+        const donneesParMois = {};
+        
+        for (let mois = 1; mois <= 12; mois++) {
+          donneesParMois[mois] = {
+            presences_par_membre: {},
+            total_reunions: 0
+          };
+        }
+        
+        this.debug(`📊 Traitement de ${presences.length} présences`);
+        
+        // Compter les présences et réunions
+        presences.forEach(presence => {
+          try {
+            // Gérer différents formats de date
+            let date;
+            if (presence.date_presence) {
+              date = new Date(presence.date_presence);
+            } else if (presence.date) {
+              date = new Date(presence.date);
+            } else {
+              this.debug("⚠️ Présence sans date:", presence);
+              return;
+            }
+            
+            // Vérifier que la date est valide
+            if (isNaN(date.getTime())) {
+              this.debug("⚠️ Date invalide:", presence);
+              return;
+            }
+            
+            const mois = date.getMonth() + 1;
+            const membreId = (presence.membre_id || presence.id_membre || presence.user_id).toString();
+            
+            if (!donneesParMois[mois].presences_par_membre[membreId]) {
+              donneesParMois[mois].presences_par_membre[membreId] = 0;
+            }
+            donneesParMois[mois].presences_par_membre[membreId]++;
+          } catch (error) {
+            this.debug("❌ Erreur traitement présence:", { presence, error: error.message });
+          }
+        });
+        
+        // Calculer le nombre de réunions par mois
+        const reunionsParMois = {};
+        presences.forEach(presence => {
+          try {
+            let date;
+            if (presence.date_presence) {
+              date = new Date(presence.date_presence);
+            } else if (presence.date) {
+              date = new Date(presence.date);
+            } else {
+              return;
+            }
+            
+            if (isNaN(date.getTime())) return;
+            
+            const mois = date.getMonth() + 1;
+            const dateStr = presence.date_presence || presence.date;
+            
+            if (!reunionsParMois[mois]) {
+              reunionsParMois[mois] = new Set();
+            }
+            reunionsParMois[mois].add(dateStr);
+          } catch (error) {
+            this.debug("❌ Erreur calcul réunions:", error.message);
+          }
+        });
+        
+        Object.keys(reunionsParMois).forEach(mois => {
+          donneesParMois[mois].total_reunions = reunionsParMois[mois].size;
+        });
+        
+        const result = {
+          membres: membres,
+          donnees: donneesParMois
+        };
+        
+        this.debug("✅ Données traitées:", result);
+        return result;
+      },
+
+      afficherChargement: function() {
+        const spinner = this.elements.btnCharger.querySelector('.loading-spinner');
+        if (spinner) {
+          spinner.style.display = 'inline-block';
+          this.elements.btnCharger.disabled = true;
+        }
+        
+        const tbody = this.elements.tableAnnuel.querySelector("tbody");
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="14" class="loading">🔄 Chargement des données...</td></tr>';
+        }
+        
+        const tbodyStats = this.elements.tableStatistiques.querySelector("tbody");
+        if (tbodyStats) {
+          tbodyStats.innerHTML = '<tr><td colspan="6" class="loading">🔄 Chargement des statistiques...</td></tr>';
+        }
+      },
+
+      construireTableaux: function(data) {
+        this.debug("🔨 Construction des tableaux");
+        
+        const spinner = this.elements.btnCharger.querySelector('.loading-spinner');
+        if (spinner) {
+          spinner.style.display = 'none';
+          this.elements.btnCharger.disabled = false;
+        }
+        
+        this.construireTableauAnnuel(data);
+        this.construireTableauStatistiques(data);
+        
+        this.debug("✅ Tableaux construits avec succès");
+      },
+
+      construireTableauAnnuel: function(data) {
+        this.debug("📅 Construction tableau annuel");
+        
+        const thead = this.elements.tableAnnuel.querySelector("thead");
+        const tbody = this.elements.tableAnnuel.querySelector("tbody");
+
+        if (!thead || !tbody) {
+          this.showError("Structure de tableau annuel manquante");
+          return;
+        }
+
+        // En-tête
+        thead.innerHTML = `
+          <tr>
+            <th>👤 Membre</th>
+            ${this.config.moisNoms.map(mois => `<th>${mois}</th>`).join('')}
+            <th>📊 Total</th>
+          </tr>
+        `;
+
+        const membres = data.membres || [];
+        const donnees = data.donnees || {};
+
+        if (membres.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="14" class="empty">Aucun membre trouvé pour ce groupe</td></tr>';
+          return;
+        }
+
+        // Corps du tableau
+        tbody.innerHTML = membres.map(membre => {
+          let totalPresences = 0;
+          
+          const cellulesPresences = this.config.moisNoms.map((_, moisIndex) => {
+            const moisNum = moisIndex + 1;
+            const donneesMois = donnees[moisNum] || {};
+            const presencesMembre = donneesMois.presences_par_membre || {};
+            const presencesMois = presencesMembre[membre.id.toString()] || 0;
+
+            totalPresences += presencesMois;
+
+            let classeCSS = "vide";
+            if (presencesMois > 0) {
+              classeCSS = presencesMois >= 2 ? "present" : "absent";
+            }
+
+            return `<td class="${classeCSS}">${presencesMois || '0'}</td>`;
+          }).join('');
+
+          return `
+            <tr>
+              <td>${membre.nom}</td>
+              ${cellulesPresences}
+              <td class="total-column">${totalPresences}</td>
+            </tr>
+          `;
+        }).join('');
+
+        this.debug("✅ Tableau annuel construit");
+      },
+
+      
+
+
+construireTableauStatistiques: function(data) {
+        this.debug("📈 Construction tableau statistiques");
+        
+        const tbody = this.elements.tableStatistiques.querySelector("tbody");
+        if (!tbody) return;
+
+        const membres = data.membres || [];
+        const donnees = data.donnees || {};
+
+        // Calculer le total de réunions dans l'année
+        let totalReunionsAnnee = 0;
+        Object.values(donnees).forEach(moisData => {
+          totalReunionsAnnee += moisData.total_reunions || 0;
+        });
+
+        if (membres.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">Aucun membre trouvé</td></tr>';
+          return;
+        }
+
+        // Récupérer le nom du groupe sélectionné
+        const groupeSelectionne = this.elements.groupeSelect.selectedOptions[0]?.text || 'Groupe sélectionné';
+
+        // Statistiques par membre
+        const statistiques = membres.map(membre => {
+          let presencesMembre = 0;
+          Object.values(donnees).forEach(moisData => {
+            const presencesMois = moisData.presences_par_membre || {};
+            presencesMembre += presencesMois[membre.id.toString()] || 0;
+          });
+
+          const tauxParticipation = totalReunionsAnnee > 0 
+            ? Math.round((presencesMembre / totalReunionsAnnee) * 100) 
+            : 0;
+
+          let statut = "";
+          let classeStatut = "";
+          if (tauxParticipation >= 80) {
+            statut = "🏆 Excellent";
+            classeStatut = "stat-excellent";
+          } else if (tauxParticipation >= 60) {
+            statut = "👍 Bon";
+            classeStatut = "stat-bon";
+          } else {
+            statut = "📈 À améliorer";
+            classeStatut = "stat-moyen";
+          }
+
+          // Essayer différentes propriétés pour le nom du groupe
+          let nomGroupe = membre.groupe_nom || membre.groupe || membre.group_name || groupeSelectionne;
+          
+          return {
+            membre,
+            nomGroupe,
+            presencesMembre,
+            tauxParticipation,
+            statut,
+            classeStatut
+          };
+        });
+
+        // Trier par taux de participation
+        statistiques.sort((a, b) => b.tauxParticipation - a.tauxParticipation);
+
+        tbody.innerHTML = statistiques.map(stat => `
+          <tr>
+            <td>${stat.membre.nom}</td>
+            <td>${stat.nomGroupe}</td>
+            <td>${stat.presencesMembre}</td>
+            <td>${totalReunionsAnnee}</td>
+            <td>${stat.tauxParticipation}%</td>
+            <td class="${stat.classeStatut}">${stat.statut}</td>
+          </tr>
+        `).join('');
+
+        this.debug("✅ Tableau statistiques construit");
+      },
+
+
+
+
+
+
+      afficherErreurTableaux: function(message) {
+        const tbody = this.elements.tableAnnuel.querySelector("tbody");
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="14" class="error">❌ Erreur: ${message}</td></tr>`;
+        }
+        
+        const tbodyStats = this.elements.tableStatistiques.querySelector("tbody");
+        if (tbodyStats) {
+          tbodyStats.innerHTML = `<tr><td colspan="6" class="error">❌ Erreur: ${message}</td></tr>`;
+        }
+      }
+    };
+
+    // Initialisation
+    document.addEventListener("DOMContentLoaded", () => {
+      PresencesAnnuelles.init();
+    });
+  </script>
+</body>
+</html>
