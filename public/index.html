@@ -2,77 +2,20 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Suivi de présence mensuelle</title>
-  <link rel="stylesheet" href="texteMensuel_Style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feuille de Présence - Redirection</title>
+    <script>
+        // Redirection automatique vers la page de login
+        window.location.href = 'login.html';
+    </script>
 </head>
 <body>
-  <h1>Suivi Mensuel de Présence</h1>
-
-
-
-
-
-   <!--Filtres-->
-
-
-
-
-
-  
-  <div class="filters">
-    <label>Groupe :
-      <select id="groupe">
-        <option value="">-- Choisir un groupe --</option>
-        <option value="agate">Groupe Agate</option>
-        <option value="jaspe">Groupe Jaspe</option>
-        <option value="diamant">Groupe Diamant</option>
-        <option value="beryl">Groupe Beryl</option>
-        <option value="calcedoine">Groupe Calcedoine</option>
-        <option value="saphir">Groupe Saphir</option>
-      </select>
-    </label>
-
-    <label>Mois :
-      <select id="mois"></select>
-    </label>
-
-    <label>Année :
-      <select id="annee"></select>
-    </label>
-
-    <label>Réunion :
-      <select id="reunion">
-        <option value="Culte de dimanche">Culte de dimanche</option>
-        <option value="Survol doctrinal">Survol doctrinal</option>
-        <option value="Réunion GC">Réunion GC</option>
-        <option value="Réunion GP">Réunion GP</option>
-
-      </select>
-    </label>
-  </div>
-
-
-
-
-  <!--Tableau-->
-
-
-
-
-
-  <div class="table-wrapper">
-    <table id="presenceTable">
-      <thead>
-        <tr id="header-row">
-          <th>Membre</th>
-        </tr>
-      </thead>
-      <tbody id="table-body">
-      </tbody>
-    </table>
-  </div>
-
-  <script src="texteMensuel_Js.js"></script>
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+        <div style="text-align: center;">
+            <h2>Redirection vers la page de connexion...</h2>
+            <p>Si vous n'êtes pas redirigé automatiquement, <a href="login.html">cliquez ici</a></p>
+        </div>
+    </div>
 </body>
 </html>
