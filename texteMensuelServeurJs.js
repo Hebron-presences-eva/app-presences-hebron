@@ -36,6 +36,8 @@ function formatDateForClient(pgDate) {
 const app = express();
 const port = 3000;
 
+
+/*
 const pool = new Pool({
   user: 'zatourexeva',
   host: 'localhost',
@@ -46,7 +48,13 @@ const pool = new Pool({
   timezone: 'UTC'
 
 });
+*/
 
+// ✅ Nouveau code (connexion Render + fallback local)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://zatourexeva:1989@localhost:5432/appjaspe',
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
  
 
 
@@ -61,45 +69,7 @@ function normalizeDate(dateString) {
 }
 
 
-//  FONCTION POUR FORMATTER LES DATES DE RETOUR
 
-/*
-// 3. FONCTION POUR FORMATTER LES DATES DE RETOUR
-function formatDateForClient(pgDate) {
-  if (!pgDate) return null;
-  // Force l'interprétation en UTC pour éviter les décalages
-  const date = new Date(pgDate.toISOString());
-  return date.toISOString().split('T')[0];
-}
-
-*/
-
-
-// 3. FONCTION POUR FORMATTER LES DATES DE RETOUR - CORRIGÉE
-
-
-/*
-function formatDateForClient(pgDate) {
-  console.log('🔍 FORMAT DATE:', pgDate, typeof pgDate);
-  if (!pgDate) return null;
-  
-  // Si c'est déjà une string, la retourner directement
-  if (typeof pgDate === 'string') {
-    return pgDate.split('T')[0];
-  }
-  
-  // Si c'est un objet Date de PostgreSQL
-  if (pgDate instanceof Date) {
-    // Utiliser les méthodes getFullYear, getMonth, getDate pour éviter les décalages
-    const year = pgDate.getFullYear();
-    const month = String(pgDate.getMonth() + 1).padStart(2, '0');
-    const day = String(pgDate.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-  
-  return null;
-}
-*/
 
 function fixPostgreSQLDate(pgDate) {
   if (!pgDate) return null;
@@ -125,8 +95,6 @@ function fixPostgreSQLDate(pgDate) {
   
   return null;
 }
-
-
 
 
 
@@ -283,25 +251,6 @@ app.get('/api/presences/debug', async (req, res) => {
 
     // Requête simple pour voir toutes les présences
     
-    /*
-    const result = await pool.query(`
-      SELECT 
-        p.id,
-        p.membre_id,
-        m.nom as membre_nom,
-        p.date_presence,
-        p.reunion_id,
-        r.libelle as reunion_libelle,
-        EXTRACT(MONTH FROM p.date_presence) as mois,
-        EXTRACT(DAY FROM p.date_presence) as jour
-      FROM presences p
-      INNER JOIN membres m ON p.membre_id = m.id
-      INNER JOIN reunions r ON p.reunion_id = r.id
-      WHERE EXTRACT(YEAR FROM p.date_presence) = $1
-        AND m.groupe_id = $2
-      ORDER BY p.date_presence ASC
-    `, [anneeNum, groupeId]);
-    */
 
     const result = await pool.query(`
       SELECT 
@@ -420,25 +369,7 @@ app.get('/api/presences/resume', async (req, res) => {
 
     const totalReunions = totalReunionsResult.rows[0]?.total || 0;
    
-  
 
-
-
-
-      // C'EST ICI QUE J'AI RAJOUTER POUR LA DATE (A EFFACER)
-
-      /*
-    const datesReunionsResult = await pool.query(`
-      SELECT DISTINCT DATE(date_presence) as date_presence
-      FROM presences p
-      INNER JOIN membres m ON p.membre_id = m.id
-      WHERE EXTRACT(MONTH FROM p.date_presence) = $1
-        AND EXTRACT(YEAR FROM p.date_presence) = $2
-        AND p.reunion_id = $3
-        AND m.groupe_id = $4
-      ORDER BY date_presence ASC
-    `, [moisNum, anneeNum, reunionId, groupeId]);
-    */
 
     const datesReunionsResult = await pool.query(`
       SELECT DISTINCT (date_presence + INTERVAL '1 day')::date as date_presence
@@ -554,24 +485,7 @@ app.get('/api/presences/annuel', async (req, res) => {
     const membres = membresResult.rows;
     console.log(`👥 ${membres.length} membres trouvés`);
 
-    // 2. Construire la requête des présences selon les filtres
-    
-    /*
-    let presencesQuery = `
-      SELECT 
-        p.membre_id, 
-        p.date_presence, 
-        p.reunion_id,
-        r.libelle as reunion_libelle,
-        EXTRACT(MONTH FROM p.date_presence) as mois
-      FROM presences p
-      INNER JOIN reunions r ON r.id = p.reunion_id
-      INNER JOIN membres m ON p.membre_id = m.id
-      WHERE EXTRACT(YEAR FROM p.date_presence) = $1
-        AND m.groupe_id = $2
-    `;
-    */
-
+  
 
     let presencesQuery = `
   SELECT 
@@ -1106,24 +1020,6 @@ app.get('/api/presences', async (req, res) => {
     console.log(`👥 ${membresResult.rows.length} membres trouvés`);
 
     
-    // 4. Récupérer les présences pour ce mois/année/réunion
-
-    /*
-    const presencesResult = await pool.query(
-      `SELECT membre_id, 
-              DATE(date_presence) as date_presence, 
-              reunion_id
-       FROM presences
-       WHERE EXTRACT(MONTH FROM date_presence) = $1
-         AND EXTRACT(YEAR FROM date_presence) = $2
-         AND reunion_id = $3
-         AND membre_id IN (
-           SELECT id FROM membres WHERE groupe_id = $4
-         )
-       ORDER BY date_presence ASC`,
-      [moisNum, anneeNum, reunionId, groupeId]
-    );
-    */
 
 
     const presencesResult = await pool.query(
