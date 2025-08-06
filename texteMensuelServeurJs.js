@@ -50,12 +50,29 @@ const pool = new Pool({
 });
 */
 
+// Code pour PWA 
+
 // ✅ Nouveau code (connexion Render + fallback local)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://zatourexeva:1989@localhost:5432/appjaspe',
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
  
+
+// Dans texteMensuelServeurJs.js, ajoutez ces headers
+app.use((req, res, next) => {
+  // Headers pour PWA
+  res.setHeader('Service-Worker-Allowed', '/');
+  next();
+});
+
+// Servir le manifest avec le bon content-type
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.sendFile(path.join(__dirname, 'manifest.json'));
+});
+
+
 
 
 // 2. FONCTION UTILITAIRE POUR NORMALISER LES DATES
