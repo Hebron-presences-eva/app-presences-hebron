@@ -2,152 +2,296 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-
-<!-- Liens pour PWA -->
-<link rel="manifest" href="/manifest.json">
-<link rel="shortcut icon" type="image/png" href="/icons/icon-192x192.png">
-<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
-
-
-<!-- Meta tags pour PWA -->
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<meta name="theme-color" content="#4f46e5">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Hébron">
-<meta name="msapplication-TileColor" content="#4f46e5">
-<meta name="msapplication-tap-highlight" content="no">
-
-<!-- Fin Meta tags pour PWA -->
-
-
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feuille de Présence - Redirection</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>App Présences Hébron</title>
 
+    <!-- Meta tags pour PWA -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hébron">
+    <meta name="msapplication-TileColor" content="#4f46e5">
+    <meta name="msapplication-tap-highlight" content="no">
 
-<!-- Script d'installation PWA à ajouter avant la fermeture de </body> -->
-<script>
-// Enregistrement du Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('Service Worker enregistré avec succès:', registration.scope);
+    <!-- Liens pour PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="shortcut icon" type="image/png" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
         
-        // Vérifier les mises à jour
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Nouvelle version disponible
-              if (confirm('Une nouvelle version est disponible. Voulez-vous recharger ?')) {
-                window.location.reload();
-              }
-            }
-          });
-        });
-      })
-      .catch((error) => {
-        console.log('Échec de l\'enregistrement du Service Worker:', error);
-      });
-  });
-}
-
-// Gestion de l'installation PWA
-let deferredPrompt;
-const installButton = document.createElement('button');
-installButton.textContent = '📱 Installer l\'app';
-installButton.style.cssText = `
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #4f46e5;
-  color: white;
-  border: none;
-  padding: 12px 16px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  display: none;
-  z-index: 1000;
-  transition: all 0.3s ease;
-`;
-
-installButton.addEventListener('mouseover', () => {
-  installButton.style.transform = 'translateY(-2px)';
-  installButton.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.4)';
-});
-
-installButton.addEventListener('mouseout', () => {
-  installButton.style.transform = 'translateY(0)';
-  installButton.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.3)';
-});
-
-document.body.appendChild(installButton);
-
-// Écouter l'événement beforeinstallprompt
-window.addEventListener('beforeinstallprompt', (e) => {
-  // Empêcher l'affichage automatique
-  e.preventDefault();
-  deferredPrompt = e;
-  
-  // Afficher notre bouton personnalisé
-  installButton.style.display = 'block';
-});
-
-// Gestion du clic sur le bouton d'installation
-installButton.addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  
-  // Afficher le prompt d'installation
-  deferredPrompt.prompt();
-  
-  // Attendre le choix de l'utilisateur
-  const { outcome } = await deferredPrompt.userChoice;
-  
-  if (outcome === 'accepted') {
-    console.log('L\'utilisateur a accepté l\'installation');
-  } else {
-    console.log('L\'utilisateur a refusé l\'installation');
-  }
-  
-  // Réinitialiser deferredPrompt
-  deferredPrompt = null;
-  installButton.style.display = 'none';
-});
-
-// Masquer le bouton après installation
-window.addEventListener('appinstalled', () => {
-  console.log('PWA installée avec succès');
-  installButton.style.display = 'none';
-  deferredPrompt = null;
-});
-
-// Détection du mode standalone (app installée)
-if (window.matchMedia('(display-mode: standalone)').matches) {
-  console.log('Application lancée en mode standalone');
-  installButton.style.display = 'none';
-}
-</script>
-
-<!-- Fin pour Script d'installation PWA à ajouter avant la fermeture de </body> -->
-
-    <script>
-        // Redirection automatique vers la page de login
-        window.location.href = 'login.html';
-    </script>
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+        }
+        
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #4f46e5;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        p {
+            color: #6b7280;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .redirect-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .redirect-btn:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+        
+        .countdown {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+    </style>
 </head>
 <body>
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
-        <div style="text-align: center;">
-            <h2>Redirection vers la page de connexion...</h2>
-            <p>Si vous n'êtes pas redirigé automatiquement, <a href="login.html">cliquez ici</a></p>
+    <div class="container">
+        <div class="logo">⛪</div>
+        <h1>App Présences Hébron</h1>
+        <p>Bienvenue dans l'application de gestion des présences de l'église Hébron.</p>
+        
+        <a href="login.html" class="redirect-btn">Accéder à l'application</a>
+        
+        <div class="countdown" id="countdown">
+            Redirection automatique dans <span id="timer">5</span> secondes...
         </div>
     </div>
+
+    <!-- Scripts PWA -->
+    <script>
+        console.log('🔍 Diagnostic PWA en cours...');
+
+        // 1. Enregistrement du Service Worker
+        if ('serviceWorker' in navigator) {
+            console.log('✅ Service Worker supporté');
+            
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('✅ Service Worker enregistré avec succès:', registration.scope);
+                        
+                        // Vérifier les mises à jour
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    if (confirm('Une nouvelle version est disponible. Voulez-vous recharger ?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.log('❌ Échec de l\'enregistrement du Service Worker:', error);
+                    });
+            });
+        } else {
+            console.log('❌ Service Worker non supporté');
+        }
+
+        // 2. Vérifier le Manifest
+        fetch('/manifest.json')
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Manifest accessible');
+                    return response.json();
+                } else {
+                    console.log('❌ Erreur manifest:', response.status);
+                }
+            })
+            .then(manifest => {
+                if (manifest) {
+                    console.log('📄 Manifest chargé:', manifest);
+                    console.log('📱 Nom app:', manifest.name);
+                    console.log('🎨 Icônes:', manifest.icons?.length || 0);
+                }
+            })
+            .catch(error => {
+                console.log('❌ Erreur chargement manifest:', error);
+            });
+
+        // 3. Gestion de l'installation PWA
+        let deferredPrompt;
+        const installButton = document.createElement('button');
+        installButton.textContent = '📱 Installer l\'app';
+        installButton.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        `;
+
+        installButton.addEventListener('mouseover', () => {
+            installButton.style.transform = 'translateY(-2px)';
+            installButton.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.4)';
+        });
+
+        installButton.addEventListener('mouseout', () => {
+            installButton.style.transform = 'translateY(0)';
+            installButton.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.3)';
+        });
+
+        document.body.appendChild(installButton);
+
+        // Écouter l'événement beforeinstallprompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('🎉 Événement beforeinstallprompt détecté !');
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.style.display = 'block';
+        });
+
+        // Gestion du clic sur le bouton d'installation
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                console.log('❌ Pas de prompt d\'installation disponible');
+                return;
+            }
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('✅ L\'utilisateur a accepté l\'installation');
+            } else {
+                console.log('❌ L\'utilisateur a refusé l\'installation');
+            }
+            
+            deferredPrompt = null;
+            installButton.style.display = 'none';
+        });
+
+        // Masquer le bouton après installation
+        window.addEventListener('appinstalled', () => {
+            console.log('🚀 PWA installée avec succès');
+            installButton.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        // Détection du mode standalone
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('📱 Application lancée en mode standalone');
+            installButton.style.display = 'none';
+        }
+
+        // 4. Bouton de diagnostic forcé
+        setTimeout(() => {
+            const debugButton = document.createElement('button');
+            debugButton.innerHTML = '🔧 Test PWA';
+            debugButton.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #ef4444;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                z-index: 10000;
+                font-size: 12px;
+                font-weight: bold;
+            `;
+            
+            debugButton.addEventListener('click', () => {
+                const criteria = {
+                    'HTTPS': location.protocol === 'https:',
+                    'Service Worker': 'serviceWorker' in navigator,
+                    'Manifest': !!document.querySelector('link[rel="manifest"]'),
+                    'Standalone': window.matchMedia('(display-mode: standalone)').matches
+                };
+                
+                let message = '📋 État PWA:\n\n';
+                Object.entries(criteria).forEach(([key, value]) => {
+                    message += `${value ? '✅' : '❌'} ${key}\n`;
+                });
+                
+                if (window.chrome && !deferredPrompt) {
+                    message += '\n💡 Pour installer: Menu Chrome → Plus d\'outils → Créer un raccourci → Cocher "Ouvrir dans une fenêtre"';
+                }
+                
+                alert(message);
+            });
+            
+            document.body.appendChild(debugButton);
+        }, 3000);
+
+        // 5. Redirection avec délai pour laisser le temps au Service Worker
+        let countdown = 5;
+        const timerElement = document.getElementById('timer');
+        
+        const updateTimer = () => {
+            timerElement.textContent = countdown;
+            countdown--;
+            
+            if (countdown < 0) {
+                window.location.href = 'login.html';
+            }
+        };
+        
+        // Démarrer le compte à rebours après 2 secondes (temps pour le SW)
+        setTimeout(() => {
+            updateTimer();
+            const timer = setInterval(() => {
+                updateTimer();
+                if (countdown < 0) {
+                    clearInterval(timer);
+                }
+            }, 1000);
+        }, 2000);
+    </script>
 </body>
 </html>
