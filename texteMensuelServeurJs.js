@@ -96,7 +96,7 @@ app.post('/api/login', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('membres')
-      .select('id, libelle, groupe_id')
+      .select('id, nom, groupe_id')
       .eq('identifiant', identifiant)
       .eq('mot_de_passe', mot_de_passe);
     
