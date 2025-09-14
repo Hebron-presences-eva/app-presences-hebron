@@ -135,7 +135,13 @@ app.get('/api/groupes', async (req, res) => {
     }
     
     console.log(`✅ ${data.length} groupes récupérés`);
-    res.json(data);
+     // ⚠️ TRANSFORMATION NÉCESSAIRE : libelle → nom pour le frontend
+     const groupesTransformed = data.map(groupe => ({
+      id: groupe.id,
+      nom: groupe.libelle  // Transformer libelle en nom
+    }));
+    
+    res.json(groupesTransformed);
   } catch (err) {
     console.error("❌ Erreur récupération groupes:", err);
     res.status(500).json({ error: "Erreur récupération groupes" });
@@ -396,10 +402,10 @@ app.get('/api/presences', async (req, res) => {
 
     // 3. Récupérer les membres du groupe
     const { data: membres, error: membresError } = await supabase
-      .from('membres')
-      .select('id, libelle, groupe_id')
-      .eq('groupe_id', groupeId)
-      .order('libelle', { ascending: true });
+    .from('membres')
+    .select('id, nom, groupe_id')  // ✅ CORRIGÉ
+    .eq('groupe_id', groupeId)
+    .order('nom', { ascending: true });
 
     if (membresError) {
       console.error("❌ Erreur membres:", membresError);
@@ -446,6 +452,161 @@ app.get('/api/presences', async (req, res) => {
     res.status(500).json({ error: "Erreur serveur lors de la récupération des présences" });
   }
 });
+
+
+
+// 5. AJOUT DE LA ROUTE PRÉSENCES ANNUELLES MANQUANTE
+app.get('/api/presences/annuel', async (req, res) => {
+  const { groupe, annee, type, reunion_id } = req.query;
+  
+  const groupeId = parseInt(groupe, 10);
+  const anneeNum = parseInt(annee, 10);
+  
+  console.log("🔍 Paramètres présences annuelles:", { groupe, annee, type, reunion_id });
+
+  if (!groupe || !annee) {
+    return res.status(400).json({ 
+      error: "Paramètres 'groupe' et 'annee' requis"
+    });
+  }
+
+  if (isNaN(groupeId) || isNaN(anneeNum)) {
+    return res.status(400).json({ 
+      error: "Les paramètres doivent être des nombres valides" 
+    });
+  }
+
+  try {
+    // 1. Récupérer le groupe
+    const { data: groupe_data, error: groupeError } = await supabase
+      .from('groupes')
+      .select('id, libelle')  // ✅ CORRECT pour groupes
+      .eq('id', groupeId)
+      .single();
+    
+    if (groupeError || !groupe_data) {
+      return res.status(404).json({ error: "Groupe non trouvé" });
+    }
+
+    // 2. Récupérer les membres du groupe
+    const { data: membres, error: membresError } = await supabase
+      .from('membres')
+      .select('id, nom, groupe_id')  // ✅ CORRECT pour membres
+      .eq('groupe_id', groupeId)
+      .order('nom', { ascending: true });
+
+    if (membresError) {
+      console.error("❌ Erreur membres:", membresError);
+      return res.status(500).json({ error: "Erreur récupération membres" });
+    }
+
+    console.log(`👥 ${membres.length} membres trouvés`);
+
+    if (membres.length === 0) {
+      return res.json({
+        groupe: { id: groupeId, nom: groupe_data.libelle },
+        reunion: null,
+        annee: anneeNum,
+        membres: [],
+        donnees: {},
+        presences: []
+      });
+    }
+
+    // 3. Construire la requête présences
+    let query = supabase
+      .from('presences')
+      .select('membre_id, date_presence, reunion_id')
+      .gte('date_presence', `${anneeNum}-01-01`)
+      .lte('date_presence', `${anneeNum}-12-31`)
+      .in('membre_id', membres.map(m => m.id));
+
+    // Filtrer par réunion si spécifié
+    if (reunion_id && reunion_id !== 'undefined') {
+      const reunionIdNum = parseInt(reunion_id, 10);
+      if (!isNaN(reunionIdNum)) {
+        query = query.eq('reunion_id', reunionIdNum);
+        console.log("🎯 Filtrage par reunion_id:", reunionIdNum);
+      }
+    }
+
+    const { data: presences, error: presencesError } = await query
+      .order('date_presence', { ascending: true });
+
+    if (presencesError) {
+      console.error("❌ Erreur présences:", presencesError);
+      return res.status(500).json({ error: "Erreur récupération présences" });
+    }
+
+    console.log(`📊 ${presences.length} présences trouvées`);
+
+    // 4. Organiser les données par mois
+    const donnees = {};
+    for (let mois = 1; mois <= 12; mois++) {
+      donnees[mois] = {
+        presences_par_membre: {}
+      };
+      
+      membres.forEach(membre => {
+        donnees[mois].presences_par_membre[membre.id] = 0;
+      });
+    }
+
+    // Compter les présences
+    presences.forEach(presence => {
+      const date = new Date(presence.date_presence + 'T00:00:00');
+      const mois = date.getMonth() + 1;
+      
+      if (donnees[mois] && donnees[mois].presences_par_membre[presence.membre_id] !== undefined) {
+        donnees[mois].presences_par_membre[presence.membre_id]++;
+      }
+    });
+
+    res.json({
+      groupe: { id: groupeId, nom: groupe_data.libelle },
+      reunion: reunion_id ? { id: reunion_id } : null,
+      annee: anneeNum,
+      membres: membres,
+      donnees: donnees,
+      presences: presences
+    });
+
+  } catch (err) {
+    console.error("❌ Erreur présences annuelles:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// 6. ROUTE DE DEBUG POUR VÉRIFIER LES RÉUNIONS
+app.get('/api/debug/reunions', async (req, res) => {
+  try {
+    const { data: reunions, error } = await supabase
+      .from('reunions')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      total: reunions.length,
+      reunions: reunions,
+      mapping_attendu: {
+        1: "Culte de Dimanche",
+        2: "Survol Doctrinal", 
+        3: "Groupe de Croissance",
+        4: "Groupe de Personne"
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 // ===========================================
 // ROUTES DE DEBUG
@@ -633,306 +794,3 @@ process.on('SIGINT', () => {
 
 
 
-/*
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-require('dotenv').config();
-
-// SUPABASE CONFIGURATION
-const { createClient } = require('@supabase/supabase-js');
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Variables d\'environnement Supabase manquantes');
-  console.error('Vérifiez SUPABASE_URL et SUPABASE_ANON_KEY dans votre fichier .env');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-console.log('✅ Connexion Supabase initialisée');
-
-// Test de connexion
-async function testSupabaseConnection() {
-  try {
-    const { data, error } = await supabase
-      .from('groupes')
-      .select('id')
-      .limit(1);
-    
-    if (error) {
-      console.error('❌ Erreur de connexion Supabase:', error);
-    } else {
-      console.log('✅ Connexion Supabase opérationnelle');
-    }
-  } catch (err) {
-    console.error('❌ Test de connexion échoué:', err);
-  }
-}
-
-// FONCTIONS UTILITAIRES
-function normalizeDate(dateString) {
-  const [year, month, day] = dateString.split('-');
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-}
-
-function formatDateForClient(pgDate) {
-  if (!pgDate) return null;
-  
-  if (typeof pgDate === 'string') {
-    return pgDate.split('T')[0];
-  }
-  
-  if (pgDate instanceof Date) {
-    const year = pgDate.getFullYear();
-    const month = String(pgDate.getMonth() + 1).padStart(2, '0');
-    const day = String(pgDate.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-  
-  return null;
-}
-
-const app = express();
-const port = process.env.PORT || 3000;
-
-// MIDDLEWARE
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
-
-// Headers pour PWA
-app.use((req, res, next) => {
-  res.setHeader('Service-Worker-Allowed', '/');
-  next();
-});
-
-// Servir le manifest
-app.get('/manifest.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/manifest+json');
-  res.sendFile(path.join(__dirname, 'manifest.json'));
-});
-
-// Middleware de logging
-app.use((req, res, next) => {
-  console.log(`🔥 ${req.method} ${req.url}`, req.query);
-  next();
-});
-
-// ===========================================
-// ROUTES D'AUTHENTIFICATION
-// ===========================================
-
-app.post('/api/login', async (req, res) => {
-  const { identifiant, mot_de_passe } = req.body;
-  
-  if (!identifiant || !mot_de_passe) {
-    return res.status(400).json({ message: "Identifiant et mot de passe requis" });
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('membres')
-      .select('id, libelle, groupe_id')
-      .eq('identifiant', identifiant)
-      .eq('mot_de_passe', mot_de_passe);
-    
-    if (error) {
-      console.error("❌ Erreur Supabase login:", error);
-      return res.status(500).json({ message: "Erreur serveur" });
-    }
-    
-    if (data && data.length > 0) {
-      console.log("✅ Connexion réussie pour:", identifiant);
-      return res.json(data[0]);
-    }
-    
-    console.log("❌ Tentative de connexion échouée pour:", identifiant);
-    res.status(401).json({ message: "Identifiants invalides" });
-  } catch (err) {
-    console.error("❌ Erreur lors de la connexion:", err);
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
-
-// ===========================================
-// ROUTES POUR LES GROUPES
-// ===========================================
-
-app.get('/api/groupes', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('groupes')
-      .select('id, libelle')
-      .order('libelle', { ascending: true });
-    
-    if (error) {
-      console.error("❌ Erreur récupération groupes:", error);
-      return res.status(500).json({ error: "Erreur récupération groupes" });
-    }
-    
-    console.log(`✅ ${data.length} groupes récupérés`);
-    res.json(data);
-  } catch (err) {
-    console.error("❌ Erreur récupération groupes:", err);
-    res.status(500).json({ error: "Erreur récupération groupes" });
-  }
-});
-
-// ===========================================
-// ROUTES POUR LES RÉUNIONS
-// ===========================================
-
-app.get('/api/reunions', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('reunions')
-      .select('id, libelle')
-      .order('libelle', { ascending: true });
-    
-    if (error) {
-      console.error("❌ Erreur récupération réunions:", error);
-      return res.status(500).json({ error: "Erreur récupération réunions" });
-    }
-    
-    console.log(`✅ ${data.length} réunions récupérées`);
-    res.json(data);
-  } catch (err) {
-    console.error("❌ Erreur récupération réunions:", err);
-    res.status(500).json({ error: "Erreur récupération réunions" });
-  }
-});
-
-// ===========================================
-// ROUTES POUR LES MEMBRES
-// ===========================================
-
-app.get('/api/membres', async (req, res) => {
-  const { groupe_id } = req.query;
-  
-  if (!groupe_id) {
-    return res.status(400).json({ error: "groupe_id requis" });
-  }
-  
-  const groupeId = parseInt(groupe_id, 10);
-  if (isNaN(groupeId)) {
-    return res.status(400).json({ error: "groupe_id doit être un nombre" });
-  }
-  
-  try {
-    const { data, error } = await supabase
-      .from('membres')
-      .select('id, libelle, groupe_id')
-      .eq('groupe_id', groupeId)
-      .order('libelle', { ascending: true });
-    
-    if (error) {
-      console.error("❌ Erreur récupération membres:", error);
-      return res.status(500).json({ error: "Erreur récupération membres" });
-    }
-    
-    console.log(`✅ ${data.length} membres récupérés pour le groupe ${groupeId}`);
-    res.json(data);
-  } catch (err) {
-    console.error("❌ Erreur récupération membres:", err);
-    res.status(500).json({ error: "Erreur récupération membres" });
-  }
-});
-
-// ===========================================
-// ROUTES DE DEBUG
-// ===========================================
-
-app.get('/api/debug/general', async (req, res) => {
-  try {
-    console.log('🔍 DEBUG GÉNÉRAL: Vérification de la base de données');
-
-    const [groupesCount, membresCount, reunionsCount, presencesCount] = await Promise.all([
-      supabase.from('groupes').select('*', { count: 'exact', head: true }),
-      supabase.from('membres').select('*', { count: 'exact', head: true }),
-      supabase.from('reunions').select('*', { count: 'exact', head: true }),
-      supabase.from('presences').select('*', { count: 'exact', head: true })
-    ]);
-
-    res.json({
-      timestamp: new Date().toISOString(),
-      statistiques: {
-        groupes: groupesCount.count || 0,
-        membres: membresCount.count || 0,
-        reunions: reunionsCount.count || 0,
-        presences: presencesCount.count || 0
-      }
-    });
-
-  } catch (err) {
-    console.error("❌ Erreur debug général:", err);
-    res.status(500).json({ 
-      error: "Erreur debug général", 
-      details: err.message 
-    });
-  }
-});
-
-// ===========================================
-// ROUTE DE TEST
-// ===========================================
-
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: "Serveur Supabase fonctionne correctement",
-    timestamp: new Date().toISOString(),
-    database: "Supabase",
-    routes_disponibles: [
-      '/api/test',
-      '/api/groupes',
-      '/api/reunions',
-      '/api/membres?groupe_id=X',
-      '/api/debug/general'
-    ]
-  });
-});
-
-// ===========================================
-// GESTION DES ERREURS ET DÉMARRAGE
-// ===========================================
-
-// Middleware de gestion d'erreur globale
-app.use((err, req, res, next) => {
-  console.error("❌ Erreur non gérée:", err);
-  res.status(500).json({ error: "Erreur serveur interne" });
-});
-
-// Route 404
-app.use('*', (req, res) => {
-  res.status(404).json({ error: "Route non trouvée" });
-});
-
-// DÉMARRAGE DU SERVEUR - UN SEUL APPEL !
-app.listen(port, async () => {
-  console.log(`🚀 Serveur démarré sur http://localhost:${port}`);
-  console.log(`📊 Interface d'administration disponible`);
-  console.log(`🔗 Base de données: Supabase`);
-  console.log(`📡 URL Supabase: ${supabaseUrl}`);
-  
-  // Tester la connexion au démarrage
-  await testSupabaseConnection();
-  
-  console.log(`🔗 Routes API disponibles:`);
-  console.log(`   GET  /api/test`);
-  console.log(`   GET  /api/groupes`);
-  console.log(`   GET  /api/reunions`);
-  console.log(`   GET  /api/membres?groupe_id=X`);
-  console.log(`   GET  /api/debug/general`);
-  console.log(`   POST /api/login`);
-});
-
-// Gestion propre de l'arrêt
-process.on('SIGINT', () => {
-  console.log('\n🛑 Arrêt du serveur...');
-  console.log('✅ Connexions fermées');
-  process.exit(0);
-});
-
-*/
