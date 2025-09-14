@@ -257,8 +257,11 @@ app.get('/api/presences/resume', async (req, res) => {
 
 
     // Récupérer les présences du mois
-    const lastDay = new Date(anneeNum, moisNum, 0).getDate();
-    const endDate = `${anneeNum}-${String(moisNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    
+    //const startDate = `${anneeNum}-${String(moisNum).padStart(2, '0')}-01`;
+    
+    const nombreJours = new Date(anneeNum, moisNum, 0).getDate();
+    const endDate = `${anneeNum}-${String(moisNum).padStart(2, '0')}-${String(nombreJours).padStart(2, '0')}`;
 
     const { data: presences, error: presencesError } = await supabase
       .from('presences')
@@ -536,8 +539,8 @@ app.get('/api/presences', async (req, res) => {
     console.log(`👥 ${membres.length} membres trouvés`);
 
     // 4. Récupérer les présences du mois
-    const lastDay = new Date(anneeNum, moisNum, 0).getDate();
-    const endDate = `${anneeNum}-${String(moisNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const startDate = `${anneeNum}-${String(moisNum).padStart(2, '0')}-01`;
+    const endDate = `${anneeNum}-${String(moisNum).padStart(2, '0')}-31`;
 
     const { data: presences, error: presencesError } = await supabase
       .from('presences')
