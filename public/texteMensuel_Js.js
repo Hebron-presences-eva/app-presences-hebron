@@ -76,6 +76,7 @@ if (!moisSelect || !anneeSelect || !groupeSelect || !reunionSelect) {
 
   // Initialiser les années - AVEC VÉRIFICATION
   const currentYear = new Date().getFullYear();
+  console.log("📅 Année actuelle détectée:", currentYear);
   for (let y = currentYear - 2; y <= currentYear + 1; y++) {
     const option = new Option(y, y);
     if (anneeSelect) {
