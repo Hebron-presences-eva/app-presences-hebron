@@ -585,6 +585,7 @@
       <button id="btnGroupeCroissance" class="nav-btn">🌱 Groupe de Croissance (Annuel)</button>
       <button id="btnPresenceAnnee" class="nav-btn secondary">📊 Toutes les Présences</button>
       <button id="btnExportCSV" class="btn-export">📥 Exporter CSV</button>
+      <button id="btnExportCSVEtendu" class="btn-export">📊 Export CSV Complet</button>
     </div>
 
     <!-- SECTION VUE MENSUELLE -->
@@ -648,6 +649,531 @@
         </table>
       </div>
     </div>
+
+
+
+
+
+
+
+    <!-- NOUVELLES RUBRIQUES - À AJOUTER AVANT LES BALISES DE FERMETURE -->
+        <div class="nouvelles-rubriques">
+          
+          <!-- RUBRIQUE ABSENCES JUSTIFIÉES -->
+          <div class="rubrique-card">
+            <div class="rubrique-header">
+              <h3 class="rubrique-title">📋 Absences Justifiées</h3>
+              <button id="btnAddAbsence" class="btn-add">+ Ajouter</button>
+            </div>
+
+            <!-- Formulaire d'ajout d'absence -->
+            <div id="formAbsence" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(102, 126, 234, 0.05); border-radius: 8px;">
+              <div class="form-row">
+                <div class="form-group-inline">
+                  <label>Membre</label>
+                  <select id="absenceMembre">
+                    <option value="">-- Choisir un membre --</option>
+                  </select>
+                </div>
+                <div class="form-group-inline">
+                  <label>Date d'absence</label>
+                  <input type="date" id="absenceDate">
+                </div>
+                <div class="form-group-inline">
+                  <label>Motif</label>
+                  <input type="text" id="absenceMotif" placeholder="Raison de l'absence">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group-inline">
+                  <label>Justification</label>
+                  <textarea id="absenceJustification" placeholder="Détails de la justification..." class="textarea-small"></textarea>
+                </div>
+              </div>
+              <div style="text-align: right; margin-top: 10px;">
+                <button id="btnSaveAbsence" class="btn-add">Enregistrer</button>
+                <button id="btnCancelAbsence" class="btn-delete" style="margin-left: 10px;">Annuler</button>
+              </div>
+            </div>
+
+            <!-- Statistiques des absences -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-number" id="statAbsencesTotal">0</span>
+                <span class="stat-label">Absences ce mois</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number" id="statAbsencesJustifiees">0</span>
+                <span class="stat-label">Justifiées</span>
+              </div>
+            </div>
+
+            <!-- Liste des absences -->
+            <div class="liste-items" id="listeAbsences">
+              <div class="empty-state">Aucune absence justifiée enregistrée</div>
+            </div>
+            
+            <div id="messageAbsence"></div>
+          </div>
+
+          <!-- RUBRIQUE RETARDS -->
+          <div class="rubrique-card">
+            <div class="rubrique-header">
+              <h3 class="rubrique-title">⏰ Retards</h3>
+              <button id="btnAddRetard" class="btn-add">+ Ajouter</button>
+            </div>
+
+            <!-- Formulaire d'ajout de retard -->
+            <div id="formRetard" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(255, 193, 7, 0.1); border-radius: 8px;">
+              <div class="form-row">
+                <div class="form-group-inline">
+                  <label>Membre</label>
+                  <select id="retardMembre">
+                    <option value="">-- Choisir un membre --</option>
+                  </select>
+                </div>
+                <div class="form-group-inline">
+                  <label>Date</label>
+                  <input type="date" id="retardDate">
+                </div>
+                <div class="form-group-inline">
+                  <label>Durée (minutes)</label>
+                  <input type="number" id="retardDuree" placeholder="15" min="1" max="120">
+                </div>
+                <div class="form-group-inline">
+                  <label>Motif</label>
+                  <input type="text" id="retardMotif" placeholder="Raison du retard">
+                </div>
+              </div>
+              <div style="text-align: right; margin-top: 10px;">
+                <button id="btnSaveRetard" class="btn-add">Enregistrer</button>
+                <button id="btnCancelRetard" class="btn-delete" style="margin-left: 10px;">Annuler</button>
+              </div>
+            </div>
+
+            <!-- Statistiques des retards -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-number" id="statRetardsTotal">0</span>
+                <span class="stat-label">Retards ce mois</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number" id="statRetardsMoyenne">0</span>
+                <span class="stat-label">Durée moyenne (min)</span>
+              </div>
+            </div>
+
+            <!-- Liste des retards -->
+            <div class="liste-items" id="listeRetards">
+              <div class="empty-state">Aucun retard enregistré</div>
+            </div>
+            
+            <div id="messageRetard"></div>
+          </div>
+
+          <!-- RUBRIQUE RÉACTIVITÉ WHATSAPP -->
+          <div class="rubrique-card">
+            <div class="rubrique-header">
+              <h3 class="rubrique-title">💬 Réactivité WhatsApp</h3>
+              <button id="btnAddReactivite" class="btn-add">+ Ajouter</button>
+            </div>
+
+            <!-- Formulaire d'ajout d'activité -->
+            <div id="formReactivite" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(40, 167, 69, 0.1); border-radius: 8px;">
+              <div class="form-row">
+                <div class="form-group-inline">
+                  <label>Membre</label>
+                  <select id="reactiviteMembre">
+                    <option value="">-- Choisir un membre --</option>
+                  </select>
+                </div>
+                <div class="form-group-inline">
+                  <label>Date d'activité</label>
+                  <input type="date" id="reactiviteDate">
+                </div>
+                <div class="form-group-inline">
+                  <label>Type d'activité</label>
+                  <select id="reactiviteType">
+                    <option value="">-- Choisir --</option>
+                    <option value="message">Message</option>
+                    <option value="reaction">Réaction</option>
+                    <option value="partage">Partage</option>
+                    <option value="commentaire">Commentaire</option>
+                    <option value="question">Question</option>
+                    <option value="reponse">Réponse</option>
+                  </select>
+                </div>
+                <div class="form-group-inline">
+                  <label>Score (1-5)</label>
+                  <select id="reactiviteScore">
+                    <option value="1">1 - Basique</option>
+                    <option value="2">2 - Moyen</option>
+                    <option value="3" selected>3 - Bien</option>
+                    <option value="4">4 - Très bien</option>
+                    <option value="5">5 - Excellent</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group-inline">
+                  <label>Contenu/Description</label>
+                  <textarea id="reactiviteContenu" placeholder="Description de l'activité..." class="textarea-small"></textarea>
+                </div>
+              </div>
+              <div style="text-align: right; margin-top: 10px;">
+                <button id="btnSaveReactivite" class="btn-add">Enregistrer</button>
+                <button id="btnCancelReactivite" class="btn-delete" style="margin-left: 10px;">Annuler</button>
+              </div>
+            </div>
+
+
+
+            <!-- 
+             < // Statistiques de réactivité  > 
+
+
+
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-number" id="statReactiviteTotal">0</span>
+                <span class="stat-label">Activités ce mois</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number" id="statReactiviteMembres">0</span>
+                <span class="stat-label">Membres actifs</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number" id="statReactiviteScore">0</span>
+                <span class="stat-label">Score moyen</span>
+              </div>
+            </div>
+
+            -->
+
+
+
+            <!-- Statistiques de réactivité améliorées -->
+        <!-- Remplacez la section stats existante de la réactivité par celle-ci -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-number" id="statReactiviteTotal">0</span>
+            <span class="stat-label">Activités ce mois</span>
+          </div>
+          <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8, #20c997);">
+            <span class="stat-number" id="statReactiviteMembres">0</span>
+            <span class="stat-label">Membres actifs / Total</span>
+          </div>
+          <div class="stat-card" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+            <span class="stat-number" id="statReactiviteScore">0</span>
+            <span class="stat-label">Score moyen</span>
+          </div>
+          <div class="stat-card" style="background: linear-gradient(135deg, #dc3545, #e83e8c);">
+            <span class="stat-number" id="statMembresPasActifs">0</span>
+            <span class="stat-label">Membres inactifs</span>
+          </div>
+        </div>
+
+
+
+        
+
+            <!-- Liste des activités -->
+            <div class="liste-items" id="listeReactivite">
+              <div class="empty-state">Aucune activité WhatsApp enregistrée</div>
+            </div>
+            
+            <div id="messageReactivite"></div>
+          </div>
+
+          <!-- RÉSUMÉ GLOBAL ÉTENDU -->
+          <div class="rubrique-card">
+            <div class="rubrique-header">
+              <h3 class="rubrique-title">📈 Résumé Global Étendu</h3>
+              <button id="btnRefreshResume" class="btn-add">🔄 Actualiser</button>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                <span class="stat-number" id="resumePresences">0</span>
+                <span class="stat-label">Présences</span>
+              </div>
+              <div class="stat-card" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+                <span class="stat-number" id="resumeAbsences">0</span>
+                <span class="stat-label">Absences justifiées</span>
+              </div>
+              <div class="stat-card" style="background: linear-gradient(135deg, #dc3545, #e83e8c);">
+                <span class="stat-number" id="resumeRetards">0</span>
+                <span class="stat-label">Retards</span>
+              </div>
+              <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8, #6f42c1);">
+                <span class="stat-number" id="resumeReactivite">0</span>
+                <span class="stat-label">Activités WhatsApp</span>
+              </div>
+            </div>
+
+            <div id="resumeDetails" style="margin-top: 20px; padding: 15px; background: rgba(102, 126, 234, 0.05); border-radius: 8px;">
+              <!-- Détails du résumé -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- CSS POUR LES NOUVELLES RUBRIQUES -->
+        <style>
+          .nouvelles-rubriques {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+          }
+
+          .rubrique-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.95));
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+          }
+
+          .rubrique-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+          }
+
+          .rubrique-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+          }
+
+          .rubrique-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .btn-add {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+          }
+
+          .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+          }
+
+          .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+          }
+
+          .form-group-inline {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .form-group-inline label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+          }
+
+          .form-group-inline input,
+          .form-group-inline select,
+          .form-group-inline textarea {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+          }
+
+          .form-group-inline input:focus,
+          .form-group-inline select:focus,
+          .form-group-inline textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+          }
+
+          .textarea-small {
+            min-height: 60px;
+            resize: vertical;
+          }
+
+          .liste-items {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            background: white;
+          }
+
+          .item-row {
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            transition: background 0.2s ease;
+          }
+
+          .item-row:hover {
+            background: rgba(102, 126, 234, 0.05);
+          }
+
+          .item-row:last-child {
+            border-bottom: none;
+          }
+
+          .item-info {
+            display: grid;
+            grid-template-columns: 150px 120px 1fr;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.9rem;
+          }
+
+          .item-nom {
+            font-weight: 600;
+            color: #2c3e50;
+          }
+
+          .item-date {
+            color: #6c757d;
+            font-size: 0.85rem;
+          }
+
+          .item-details {
+            color: #495057;
+          }
+
+          .btn-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+          }
+
+          .btn-delete:hover {
+            background: #c82333;
+            transform: scale(1.05);
+          }
+
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+
+          .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+          }
+
+          .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: block;
+          }
+
+          .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+            font-style: italic;
+          }
+
+          .type-badge {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+          }
+
+          .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #c3e6cb;
+          }
+
+          .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #f1b0b7;
+          }
+
+          @media (max-width: 768px) {
+            .nouvelles-rubriques {
+              gap: 15px;
+            }
+            
+            .rubrique-card {
+              padding: 20px 15px;
+            }
+            
+            .form-row {
+              grid-template-columns: 1fr;
+              gap: 10px;
+            }
+            
+            .item-info {
+              grid-template-columns: 1fr;
+              gap: 5px;
+            }
+            
+            .stats-grid {
+              grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+              gap: 10px;
+            }
+          }
+        </style>
+
+
+
+
+
 
   </div>
 </div>

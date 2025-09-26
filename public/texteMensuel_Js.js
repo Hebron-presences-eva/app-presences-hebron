@@ -843,5 +843,704 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
       document.body.removeChild(link);
     });
   }
+
+
+
+
+
+  // ===========================================
+  // NOUVELLES FONCTIONNALITÉS - À AJOUTER À LA FIN DE VOTRE FICHIER JS
+  // ===========================================
+
+  // Variables pour les nouvelles rubriques
+  let membresDataNouvelles = [];
+
+  // Fonction pour récupérer les paramètres actuels
+  function getCurrentParamsNouvelles() {
+    const groupeSelect = document.getElementById('groupe');
+    const reunionSelect = document.getElementById('reunion');
+    const moisSelect = document.getElementById('mois');
+    const anneeSelect = document.getElementById('annee');
+
+    return {
+      groupe: groupeSelect?.value || '',
+      reunion: reunionSelect?.value || '',
+      mois: moisSelect?.value || '',
+      annee: anneeSelect?.value || ''
+    };
+  }
+
+  // Charger les membres pour les formulaires
+  function chargerMembresFormulaires() {
+    const params = getCurrentParamsNouvelles();
+    if (!params.groupe) return;
+
+    fetch(`/api/membres?groupe_id=${params.groupe}`)
+      .then(res => res.json())
+      .then(membres => {
+        membresDataNouvelles = membres;
+        
+        // Remplir les selects de membres
+        ['absenceMembre', 'retardMembre', 'reactiviteMembre'].forEach(selectId => {
+          const select = document.getElementById(selectId);
+          if (select) {
+            select.innerHTML = '<option value="">-- Choisir un membre --</option>';
+            membres.forEach(membre => {
+              select.innerHTML += `<option value="${membre.id}">${membre.nom}</option>`;
+            });
+          }
+        });
+      })
+      .catch(err => console.error('Erreur chargement membres:', err));
+  }
+
+  // Fonction utilitaire pour afficher les messages
+  function afficherMessage(containerId, message, type) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const className = type === 'success' ? 'success-message' : 'error-message';
+    container.innerHTML = `<div class="${className}">${message}</div>`;
+    
+    setTimeout(() => {
+      container.innerHTML = '';
+    }, 5000);
+  }
+
+  // GESTION DES ABSENCES
+  function toggleFormAbsence() {
+    const form = document.getElementById('formAbsence');
+    if (!form) return;
+    
+    const isVisible = form.style.display !== 'none';
+    form.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible) {
+      chargerMembresFormulaires();
+      document.getElementById('absenceDate').value = new Date().toISOString().split('T')[0];
+    }
+  }
+
+  function sauvegarderAbsence() {
+    const params = getCurrentParamsNouvelles();
+    const membreId = document.getElementById('absenceMembre').value;
+    const date = document.getElementById('absenceDate').value;
+    const motif = document.getElementById('absenceMotif').value;
+    const justification = document.getElementById('absenceJustification').value;
+
+    if (!membreId || !date) {
+      afficherMessage('messageAbsence', 'Veuillez remplir tous les champs obligatoires', 'error');
+      return;
+    }
+
+    const donnees = {
+      membre_id: membreId,
+      reunion_id: params.reunion || 1,
+      date_absence: date,
+      motif: motif,
+      justification: justification
+    };
+
+    fetch('/api/absences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(donnees)
+    })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success) {
+        afficherMessage('messageAbsence', 'Absence enregistrée avec succès', 'success');
+        document.getElementById('formAbsence').style.display = 'none';
+        resetFormAbsence();
+        chargerAbsences();
+      } else {
+        afficherMessage('messageAbsence', 'Erreur lors de l\'enregistrement', 'error');
+      }
+    })
+    .catch(err => {
+      console.error('Erreur sauvegarde absence:', err);
+      afficherMessage('messageAbsence', 'Erreur de connexion', 'error');
+    });
+  }
+
+  function chargerAbsences() {
+    const params = getCurrentParamsNouvelles();
+    if (!params.groupe || !params.mois || !params.annee) return;
+
+    const url = `/api/absences?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}&reunion_id=${params.reunion || ''}`;
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(absences => {
+        const liste = document.getElementById('listeAbsences');
+        if (!liste) return;
+        
+        if (absences.length === 0) {
+          liste.innerHTML = '<div class="empty-state">Aucune absence justifiée enregistrée</div>';
+        } else {
+          liste.innerHTML = absences.map(absence => `
+            <div class="item-row">
+              <div class="item-info">
+                <div class="item-nom">${absence.membres?.nom || 'Inconnu'}</div>
+                <div class="item-date">${new Date(absence.date_absence).toLocaleDateString('fr-FR')}</div>
+                <div class="item-details">
+                  <strong>Motif:</strong> ${absence.motif || 'Non précisé'}<br>
+                  <small>${absence.justification || ''}</small>
+                </div>
+              </div>
+              <button class="btn-delete" onclick="supprimerAbsence(${absence.id})">Suppr.</button>
+            </div>
+          `).join('');
+        }
+
+        // Mettre à jour les statistiques
+        const statTotal = document.getElementById('statAbsencesTotal');
+        const statJustifiees = document.getElementById('statAbsencesJustifiees');
+        if (statTotal) statTotal.textContent = absences.length;
+        if (statJustifiees) statJustifiees.textContent = absences.filter(a => a.justification).length;
+      })
+      .catch(err => console.error('Erreur chargement absences:', err));
+  }
+
+  function resetFormAbsence() {
+    document.getElementById('absenceMembre').value = '';
+    document.getElementById('absenceDate').value = '';
+    document.getElementById('absenceMotif').value = '';
+    document.getElementById('absenceJustification').value = '';
+  }
+
+  // GESTION DES RETARDS
+  function toggleFormRetard() {
+    const form = document.getElementById('formRetard');
+    if (!form) return;
+    
+    const isVisible = form.style.display !== 'none';
+    form.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible) {
+      chargerMembresFormulaires();
+      document.getElementById('retardDate').value = new Date().toISOString().split('T')[0];
+    }
+  }
+
+  function sauvegarderRetard() {
+    const params = getCurrentParamsNouvelles();
+    const membreId = document.getElementById('retardMembre').value;
+    const date = document.getElementById('retardDate').value;
+    const duree = document.getElementById('retardDuree').value;
+    const motif = document.getElementById('retardMotif').value;
+
+    if (!membreId || !date) {
+      afficherMessage('messageRetard', 'Veuillez remplir tous les champs obligatoires', 'error');
+      return;
+    }
+
+    const donnees = {
+      membre_id: membreId,
+      reunion_id: params.reunion || 1,
+      date_retard: date,
+      duree_retard: duree || null,
+      motif: motif
+    };
+
+    fetch('/api/retards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(donnees)
+    })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success) {
+        afficherMessage('messageRetard', 'Retard enregistré avec succès', 'success');
+        document.getElementById('formRetard').style.display = 'none';
+        resetFormRetard();
+        chargerRetards();
+      } else {
+        afficherMessage('messageRetard', 'Erreur lors de l\'enregistrement', 'error');
+      }
+    })
+    .catch(err => {
+      console.error('Erreur sauvegarde retard:', err);
+      afficherMessage('messageRetard', 'Erreur de connexion', 'error');
+    });
+  }
+
+  function chargerRetards() {
+    const params = getCurrentParamsNouvelles();
+    if (!params.groupe || !params.mois || !params.annee) return;
+
+    const url = `/api/retards?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}&reunion_id=${params.reunion || ''}`;
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(retards => {
+        const liste = document.getElementById('listeRetards');
+        if (!liste) return;
+        
+        if (retards.length === 0) {
+          liste.innerHTML = '<div class="empty-state">Aucun retard enregistré</div>';
+        } else {
+          liste.innerHTML = retards.map(retard => `
+            <div class="item-row">
+              <div class="item-info">
+                <div class="item-nom">${retard.membres?.nom || 'Inconnu'}</div>
+                <div class="item-date">${new Date(retard.date_retard).toLocaleDateString('fr-FR')}</div>
+                <div class="item-details">
+                  <strong>${retard.duree_retard || '?'} min</strong> - ${retard.motif || 'Non précisé'}
+                </div>
+              </div>
+              <button class="btn-delete" onclick="supprimerRetard(${retard.id})">Suppr.</button>
+            </div>
+          `).join('');
+        }
+
+        // Statistiques des retards
+        const dureesMoyenne = retards.filter(r => r.duree_retard).reduce((acc, r) => acc + r.duree_retard, 0) / retards.filter(r => r.duree_retard).length || 0;
+        
+        const statTotal = document.getElementById('statRetardsTotal');
+        const statMoyenne = document.getElementById('statRetardsMoyenne');
+        if (statTotal) statTotal.textContent = retards.length;
+        if (statMoyenne) statMoyenne.textContent = Math.round(dureesMoyenne);
+      })
+      .catch(err => console.error('Erreur chargement retards:', err));
+  }
+
+  function resetFormRetard() {
+    document.getElementById('retardMembre').value = '';
+    document.getElementById('retardDate').value = '';
+    document.getElementById('retardDuree').value = '';
+    document.getElementById('retardMotif').value = '';
+  }
+
+  // GESTION DE LA RÉACTIVITÉ WHATSAPP
+  function toggleFormReactivite() {
+    const form = document.getElementById('formReactivite');
+    if (!form) return;
+    
+    const isVisible = form.style.display !== 'none';
+    form.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible) {
+      chargerMembresFormulaires();
+      document.getElementById('reactiviteDate').value = new Date().toISOString().split('T')[0];
+    }
+  }
+
+  function sauvegarderReactivite() {
+    const params = getCurrentParamsNouvelles();
+    const membreId = document.getElementById('reactiviteMembre').value;
+    const date = document.getElementById('reactiviteDate').value;
+    const type = document.getElementById('reactiviteType').value;
+    const score = document.getElementById('reactiviteScore').value;
+    const contenu = document.getElementById('reactiviteContenu').value;
+
+    if (!membreId || !date || !type) {
+      afficherMessage('messageReactivite', 'Veuillez remplir tous les champs obligatoires', 'error');
+      return;
+    }
+
+    const donnees = {
+      membre_id: membreId,
+      groupe_id: params.groupe,
+      date_activite: date,
+      type_activite: type,
+      contenu: contenu,
+      score_reactivite: parseInt(score)
+    };
+
+    fetch('/api/reactivite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(donnees)
+    })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success) {
+        afficherMessage('messageReactivite', 'Activité enregistrée avec succès', 'success');
+        document.getElementById('formReactivite').style.display = 'none';
+        resetFormReactivite();
+        chargerReactivite();
+      } else {
+        afficherMessage('messageReactivite', 'Erreur lors de l\'enregistrement', 'error');
+      }
+    })
+    .catch(err => {
+      console.error('Erreur sauvegarde réactivité:', err);
+      afficherMessage('messageReactivite', 'Erreur de connexion', 'error');
+    });
+  }
+
+
+
+
+
+  
+
+/*
+
+  function chargerReactivite() {
+    const params = getCurrentParamsNouvelles();
+    if (!params.groupe || !params.mois || !params.annee) return;
+
+    const url = `/api/reactivite?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}`;
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        const activites = data.activites || [];
+        const stats = data.statistiques || {};
+        const liste = document.getElementById('listeReactivite');
+        
+        if (!liste) return;
+        
+        if (activites.length === 0) {
+          liste.innerHTML = '<div class="empty-state">Aucune activité WhatsApp enregistrée</div>';
+        } else {
+          liste.innerHTML = activites.map(activite => `
+            <div class="item-row">
+              <div class="item-info">
+                <div class="item-nom">${activite.membres?.nom || 'Inconnu'}</div>
+                <div class="item-date">${new Date(activite.date_activite).toLocaleDateString('fr-FR')}</div>
+                <div class="item-details">
+                  <span class="type-badge">${activite.type_activite}</span>
+                  Score: ${activite.score_reactivite}/5<br>
+                  <small>${activite.contenu || ''}</small>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Statistiques de réactivité
+        const scoreMoyen = activites.reduce((acc, a) => acc + (a.score_reactivite || 0), 0) / activites.length || 0;
+        
+        const statTotal = document.getElementById('statReactiviteTotal');
+        const statMembres = document.getElementById('statReactiviteMembres');
+        const statScore = document.getElementById('statReactiviteScore');
+        
+        if (statTotal) statTotal.textContent = activites.length;
+        if (statMembres) statMembres.textContent = Object.keys(stats).length;
+        if (statScore) statScore.textContent = scoreMoyen.toFixed(1);
+      })
+      .catch(err => console.error('Erreur chargement réactivité:', err));
+  }
+
+
+  */
+
+
+
+
+
+  // ===========================================
+// MODIFICATIONS POUR LA RÉACTIVITÉ WHATSAPP AMÉLIORÉE
+// Remplacez la fonction chargerReactivite() existante par celle-ci
+// ===========================================
+
+function chargerReactivite() {
+  const params = getCurrentParamsNouvelles();
+  if (!params.groupe || !params.mois || !params.annee) return;
+
+  const url = `/api/reactivite?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}`;
+  
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const activites = data.activites || [];
+      const stats = data.statistiques || {};
+      const liste = document.getElementById('listeReactivite');
+      
+      if (!liste) return;
+      
+      // Récupérer tous les membres du groupe pour identifier les non-actifs
+      fetch(`/api/membres?groupe_id=${params.groupe}`)
+        .then(res => res.json())
+        .then(tousMembres => {
+          // Identifier les membres actifs et non-actifs
+          const membresActifs = Object.keys(stats).map(id => parseInt(id));
+          const membresNonActifs = tousMembres.filter(membre => !membresActifs.includes(membre.id));
+          
+          let contenuHTML = '';
+          
+          // Section des activités
+          if (activites.length > 0) {
+            contenuHTML += `
+              <div style="margin-bottom: 20px;">
+                <h4 style="color: #28a745; margin-bottom: 10px;">📱 Activités du mois</h4>
+                ${activites.map(activite => `
+                  <div class="item-row">
+                    <div class="item-info">
+                      <div class="item-nom">${activite.membres?.nom || 'Inconnu'}</div>
+                      <div class="item-date">${new Date(activite.date_activite).toLocaleDateString('fr-FR')}</div>
+                      <div class="item-details">
+                        <span class="type-badge">${activite.type_activite}</span>
+                        Score: ${activite.score_reactivite}/5<br>
+                        <small>${activite.contenu || ''}</small>
+                      </div>
+                    </div>
+                    <button class="btn-delete" onclick="supprimerActiviteWhatsApp(${activite.id})">Suppr.</button>
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
+          
+          // Section des membres non-actifs
+          if (membresNonActifs.length > 0) {
+            contenuHTML += `
+              <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid rgba(220, 53, 69, 0.2);">
+                <h4 style="color: #dc3545; margin-bottom: 10px;">😴 Membres non actifs ce mois</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                  ${membresNonActifs.map(membre => `
+                    <div style="background: rgba(220, 53, 69, 0.1); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #dc3545;">
+                      <span style="font-weight: 600;">${membre.nom}</span>
+                      <br><small style="color: #6c757d;">Aucune activité enregistrée</small>
+                    </div>
+                  `).join('')}
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: rgba(255, 193, 7, 0.1); border-radius: 6px; border-left: 3px solid #ffc107;">
+                  <strong>💡 Suggestion:</strong> Encouragez ces membres à participer davantage aux échanges WhatsApp du groupe.
+                </div>
+              </div>
+            `;
+          }
+          
+          if (activites.length === 0 && membresNonActifs.length === 0) {
+            liste.innerHTML = '<div class="empty-state">Aucune donnée disponible</div>';
+          } else {
+            liste.innerHTML = contenuHTML;
+          }
+
+
+          /*
+          // Mettre à jour les statistiques
+          const scoreMoyen = activites.reduce((acc, a) => acc + (a.score_reactivite || 0), 0) / activites.length || 0;
+          
+          const statTotal = document.getElementById('statReactiviteTotal');
+          const statMembres = document.getElementById('statReactiviteMembres');
+          const statScore = document.getElementById('statReactiviteScore');
+          
+          if (statTotal) statTotal.textContent = activites.length;
+          if (statMembres) statMembres.textContent = `${Object.keys(stats).length}/${tousMembres.length}`;
+          if (statScore) statScore.textContent = scoreMoyen.toFixed(1);
+
+          */
+
+          // Mettre à jour les statistiques complètes
+          const scoreMoyen = activites.reduce((acc, a) => acc + (a.score_reactivite || 0), 0) / activites.length || 0;
+          
+          const statTotal = document.getElementById('statReactiviteTotal');
+          const statMembres = document.getElementById('statReactiviteMembres');
+          const statScore = document.getElementById('statReactiviteScore');
+          const statPasActifs = document.getElementById('statMembresPasActifs');
+          
+          if (statTotal) statTotal.textContent = activites.length;
+          if (statMembres) statMembres.textContent = `${Object.keys(stats).length}/${tousMembres.length}`;
+          if (statScore) statScore.textContent = scoreMoyen.toFixed(1);
+          if (statPasActifs) statPasActifs.textContent = membresNonActifs.length;
+
+        })
+        .catch(err => console.error('Erreur chargement membres:', err));
+    })
+    .catch(err => console.error('Erreur chargement réactivité:', err));
+}
+
+// Fonction pour supprimer une activité WhatsApp
+window.supprimerActiviteWhatsApp = function(id) {
+  if (!confirm('Supprimer cette activité WhatsApp ?')) return;
+  
+  fetch(`/api/reactivite/${id}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success) {
+        afficherMessage('messageReactivite', 'Activité supprimée', 'success');
+        chargerReactivite();
+        chargerResumeEtendu(); // Mettre à jour le résumé global
+      } else {
+        afficherMessage('messageReactivite', 'Erreur lors de la suppression', 'error');
+      }
+    })
+    .catch(err => {
+      console.error('Erreur suppression activité:', err);
+      afficherMessage('messageReactivite', 'Erreur de connexion', 'error');
+    });
+};
+
+
+  function resetFormReactivite() {
+    document.getElementById('reactiviteMembre').value = '';
+    document.getElementById('reactiviteDate').value = '';
+    document.getElementById('reactiviteType').value = '';
+    document.getElementById('reactiviteScore').value = '3';
+    document.getElementById('reactiviteContenu').value = '';
+  }
+
+
+
+
+
+
+  // RÉSUMÉ ÉTENDU
+  function chargerResumeEtendu() {
+    const params = getCurrentParamsNouvelles();
+    if (!params.groupe || !params.mois || !params.annee) return;
+
+    const url = `/api/resume-etendu?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}&reunion_id=${params.reunion || ''}`;
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        const resume = data.resume_global || {};
+        
+        const resumePresences = document.getElementById('resumePresences');
+        const resumeAbsences = document.getElementById('resumeAbsences');
+        const resumeRetards = document.getElementById('resumeRetards');
+        const resumeReactivite = document.getElementById('resumeReactivite');
+        
+        if (resumePresences) resumePresences.textContent = resume.total_presences || 0;
+        if (resumeAbsences) resumeAbsences.textContent = resume.total_absences_justifiees || 0;
+        if (resumeRetards) resumeRetards.textContent = resume.total_retards || 0;
+        if (resumeReactivite) resumeReactivite.textContent = resume.membres_actifs_whatsapp || 0;
+        
+        const details = document.getElementById('resumeDetails');
+        if (details) {
+          const totalMembres = resume.total_presences + resume.total_absences_justifiees || 1;
+          const tauxPresence = Math.round((resume.total_presences / totalMembres) * 100);
+          
+          details.innerHTML = `
+            <h4 style="margin-bottom: 15px; color: #2c3e50;">Analyse du mois</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+              <div>
+                <strong>Taux de présence:</strong><br>
+                <span style="font-size: 1.2em; color: ${tauxPresence >= 80 ? '#28a745' : tauxPresence >= 60 ? '#ffc107' : '#dc3545'};">
+                  ${tauxPresence}%
+                </span>
+              </div>
+              <div>
+                <strong>Engagement WhatsApp:</strong><br>
+                <span style="font-size: 1.2em; color: #17a2b8;">
+                  ${resume.membres_actifs_whatsapp} membres actifs
+                </span>
+              </div>
+              <div>
+                <strong>Ponctualité:</strong><br>
+                <span style="font-size: 1.2em; color: ${resume.total_retards <= 2 ? '#28a745' : '#dc3545'};">
+                  ${resume.total_retards} retard${resume.total_retards > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+          `;
+        }
+      })
+      .catch(err => console.error('Erreur résumé étendu:', err));
+  }
+
+  // FONCTIONS GLOBALES POUR LES SUPPRESSIONS
+  window.supprimerAbsence = function(id) {
+    if (!confirm('Supprimer cette absence ?')) return;
+
+    fetch(`/api/absences/${id}`, { method: 'DELETE' })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          afficherMessage('messageAbsence', 'Absence supprimée', 'success');
+          chargerAbsences();
+        }
+      })
+      .catch(err => console.error('Erreur suppression:', err));
+  };
+
+  window.supprimerRetard = function(id) {
+    if (!confirm('Supprimer ce retard ?')) return;
+    
+    fetch(`/api/retards/${id}`, { method: 'DELETE' })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          afficherMessage('messageRetard', 'Retard supprimé', 'success');
+          chargerRetards();
+        }
+      })
+      .catch(err => console.error('Erreur suppression:', err));
+  };
+
+  // EVENT LISTENERS POUR LES NOUVELLES RUBRIQUES
+  setTimeout(() => {
+    // Boutons d'ajout
+    const btnAddAbsence = document.getElementById('btnAddAbsence');
+    const btnAddRetard = document.getElementById('btnAddRetard');
+    const btnAddReactivite = document.getElementById('btnAddReactivite');
+    
+    if (btnAddAbsence) btnAddAbsence.addEventListener('click', toggleFormAbsence);
+    if (btnAddRetard) btnAddRetard.addEventListener('click', toggleFormRetard);
+    if (btnAddReactivite) btnAddReactivite.addEventListener('click', toggleFormReactivite);
+
+    // Boutons de sauvegarde
+    const btnSaveAbsence = document.getElementById('btnSaveAbsence');
+    const btnSaveRetard = document.getElementById('btnSaveRetard');
+    const btnSaveReactivite = document.getElementById('btnSaveReactivite');
+    
+    if (btnSaveAbsence) btnSaveAbsence.addEventListener('click', sauvegarderAbsence);
+    if (btnSaveRetard) btnSaveRetard.addEventListener('click', sauvegarderRetard);
+    if (btnSaveReactivite) btnSaveReactivite.addEventListener('click', sauvegarderReactivite);
+
+    // Boutons d'annulation
+    const btnCancelAbsence = document.getElementById('btnCancelAbsence');
+    const btnCancelRetard = document.getElementById('btnCancelRetard');
+    const btnCancelReactivite = document.getElementById('btnCancelReactivite');
+    
+    if (btnCancelAbsence) {
+      btnCancelAbsence.addEventListener('click', () => {
+        document.getElementById('formAbsence').style.display = 'none';
+        resetFormAbsence();
+      });
+    }
+    if (btnCancelRetard) {
+      btnCancelRetard.addEventListener('click', () => {
+        document.getElementById('formRetard').style.display = 'none';
+        resetFormRetard();
+      });
+    }
+    if (btnCancelReactivite) {
+      btnCancelReactivite.addEventListener('click', () => {
+        document.getElementById('formReactivite').style.display = 'none';
+        resetFormReactivite();
+      });
+    }
+
+    // Bouton refresh résumé
+    const btnRefreshResume = document.getElementById('btnRefreshResume');
+    if (btnRefreshResume) {
+      btnRefreshResume.addEventListener('click', chargerResumeEtendu);
+    }
+
+    // Observer les changements de paramètres
+    ['groupe', 'mois', 'annee', 'reunion'].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.addEventListener('change', () => {
+          setTimeout(() => {
+            chargerAbsences();
+            chargerRetards();
+            chargerReactivite();
+            chargerResumeEtendu();
+          }, 100);
+        });
+      }
+    });
+
+    // Chargement initial des nouvelles données
+    setTimeout(() => {
+      chargerAbsences();
+      chargerRetards();
+      chargerReactivite();
+      chargerResumeEtendu();
+    }, 1000);
+
+  }, 500);
+
+
+
+
 });
 
