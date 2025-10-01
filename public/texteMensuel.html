@@ -875,7 +875,7 @@
 
 
 
-        
+
 
             <!-- Liste des activités -->
             <div class="liste-items" id="listeReactivite">
@@ -911,7 +911,67 @@
               </div>
             </div>
 
+            <!--
+            
             <div id="resumeDetails" style="margin-top: 20px; padding: 15px; background: rgba(102, 126, 234, 0.05); border-radius: 8px;">
+            
+              -->
+
+
+
+
+
+
+
+
+
+
+            <!-- AJOUTEZ CE CODE DANS LA SECTION "RÉSUMÉ GLOBAL ÉTENDU" DE VOTRE HTML -->
+            <!-- Remplacez uniquement la div "resumeDetails" par ceci : -->
+
+            <div id="resumeDetails" style="margin-top: 20px;">
+              <!-- Canvas pour les graphiques -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                  <h4 style="text-align: center; color: #2c3e50; margin-bottom: 10px;">Répartition des présences</h4>
+                  <canvas id="chartPresences" width="400" height="300"></canvas>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                  <h4 style="text-align: center; color: #2c3e50; margin-bottom: 10px;">Engagement du groupe</h4>
+                  <canvas id="chartEngagement" width="400" height="300"></canvas>
+                </div>
+              </div>
+
+              <!-- Graphique réactivité WhatsApp -->
+              <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                <h4 style="text-align: center; color: #2c3e50; margin-bottom: 10px;">Réactivité WhatsApp par membre</h4>
+                <canvas id="chartReactivite" width="800" height="300"></canvas>
+              </div>
+
+              <!-- Analyse textuelle -->
+              <div id="analyseTextuelle" style="padding: 15px; background: rgba(102, 126, 234, 0.05); border-radius: 8px; margin-bottom: 15px;">
+                <!-- Sera rempli dynamiquement -->
+              </div>
+
+              <!-- Boutons d'export -->
+              <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button id="btnExportPDF" class="btn-export" style="background: linear-gradient(135deg, #dc3545, #e83e8c);">
+                  📄 Télécharger Rapport PDF
+                </button>
+                <button id="btnExportExcel" class="btn-export" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                  📊 Télécharger Excel
+                </button>
+                <button id="btnExportGraphiques" class="btn-export" style="background: linear-gradient(135deg, #17a2b8, #6f42c1);">
+                  📈 Télécharger Graphiques PNG
+                </button>
+              </div>
+            </div>
+
+
+
+
+
+
               <!-- Détails du résumé -->
             </div>
           </div>
@@ -1170,13 +1230,13 @@
           }
         </style>
 
-
-
-
-
-
   </div>
 </div>
+
+          <!-- Ajouter Chart.js via CDN - Mettez ceci AVANT </body> -->
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script src="texteMensuel_Js.js"></script>
 </body>

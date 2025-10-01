@@ -1355,7 +1355,9 @@ window.supprimerActiviteWhatsApp = function(id) {
       if (result.success) {
         afficherMessage('messageReactivite', 'Activité supprimée', 'success');
         chargerReactivite();
-        chargerResumeEtendu(); // Mettre à jour le résumé global
+
+        //chargerResumeEtendu(); // Mettre à jour le résumé global
+        
       } else {
         afficherMessage('messageReactivite', 'Erreur lors de la suppression', 'error');
       }
@@ -1540,6 +1542,437 @@ window.supprimerActiviteWhatsApp = function(id) {
   }, 500);
 
 
+
+// ===========================================
+  // GESTION DES GRAPHIQUES ET EXPORTS
+  // ===========================================
+
+  let chartsInstances = {
+    presences: null,
+    engagement: null,
+    reactivite: null
+  };
+
+  let donneesExport = {
+    presences: 0,
+    absences: 0,
+    retards: 0,
+    reactiviteWhatsApp: 0,
+    membresActifs: 0,
+    membresTotaux: 0,
+    detailsReactivite: []
+  };
+
+  function creerGraphiquePresences(presences, absences, retards) {
+    const ctx = document.getElementById('chartPresences');
+    if (!ctx) return;
+
+    if (chartsInstances.presences) {
+      chartsInstances.presences.destroy();
+    }
+
+    chartsInstances.presences = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Présents', 'Absences justifiées', 'Retards'],
+        datasets: [{
+          data: [presences, absences, retards],
+          backgroundColor: [
+            'rgba(40, 167, 69, 0.8)',
+            'rgba(255, 193, 7, 0.8)',
+            'rgba(220, 53, 69, 0.8)'
+          ],
+          borderColor: [
+            'rgba(40, 167, 69, 1)',
+            'rgba(255, 193, 7, 1)',
+            'rgba(220, 53, 69, 1)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 15,
+              font: { size: 12 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                return `${context.label}: ${context.parsed} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function creerGraphiqueEngagement(membresActifs, membresTotaux, scoreWhatsApp) {
+    const ctx = document.getElementById('chartEngagement');
+    if (!ctx) return;
+
+    if (chartsInstances.engagement) {
+      chartsInstances.engagement.destroy();
+    }
+
+    const tauxPresence = membresTotaux > 0 ? (membresActifs / membresTotaux * 100).toFixed(1) : 0;
+
+    chartsInstances.engagement = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Taux de présence', 'Score WhatsApp'],
+        datasets: [{
+          label: 'Pourcentage',
+          data: [tauxPresence, scoreWhatsApp],
+          backgroundColor: [
+            'rgba(102, 126, 234, 0.8)',
+            'rgba(23, 162, 184, 0.8)'
+          ],
+          borderColor: [
+            'rgba(102, 126, 234, 1)',
+            'rgba(23, 162, 184, 1)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              callback: function(value) {
+                return value + '%';
+              }
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+  }
+
+  function creerGraphiqueReactivite(detailsReactivite) {
+    const ctx = document.getElementById('chartReactivite');
+    if (!ctx) return;
+
+    if (chartsInstances.reactivite) {
+      chartsInstances.reactivite.destroy();
+    }
+
+    const noms = detailsReactivite.map(d => d.nom);
+    const scores = detailsReactivite.map(d => d.score_total || 0);
+    const activites = detailsReactivite.map(d => d.total_activites || 0);
+
+    chartsInstances.reactivite = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: noms,
+        datasets: [
+          {
+            label: 'Score total',
+            data: scores,
+            backgroundColor: 'rgba(40, 167, 69, 0.6)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 2,
+            yAxisID: 'y'
+          },
+          {
+            label: "Nombre d'activités",
+            data: activites,
+            backgroundColor: 'rgba(23, 162, 184, 0.6)',
+            borderColor: 'rgba(23, 162, 184, 1)',
+            borderWidth: 2,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Score total'
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: "Nombre d'activités"
+            },
+            grid: {
+              drawOnChartArea: false,
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function genererAnalyseTextuelle(resume, membresActifs, membresTotaux) {
+    const analyseDiv = document.getElementById('analyseTextuelle');
+    if (!analyseDiv) return;
+
+    const totalMembres = resume.total_presences + resume.total_absences_justifiees || 1;
+    const tauxPresence = Math.round((resume.total_presences / totalMembres) * 100);
+    const tauxEngagement = membresTotaux > 0 ? Math.round((membresActifs / membresTotaux) * 100) : 0;
+
+    let analyse = '<h4 style="margin-bottom: 15px; color: #2c3e50;">📊 Analyse du mois</h4>';
+    analyse += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">';
+
+    const couleurPresence = tauxPresence >= 80 ? '#28a745' : tauxPresence >= 60 ? '#ffc107' : '#dc3545';
+    analyse += `
+      <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid ${couleurPresence};">
+        <strong style="color: ${couleurPresence};">Taux de présence: ${tauxPresence}%</strong><br>
+        <small>${tauxPresence >= 80 ? '✅ Excellent' : tauxPresence >= 60 ? '⚠️ Acceptable' : '❌ À améliorer'}</small>
+      </div>
+    `;
+
+    const couleurRetards = resume.total_retards <= 2 ? '#28a745' : '#dc3545';
+    analyse += `
+      <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid ${couleurRetards};">
+        <strong style="color: ${couleurRetards};">Ponctualité: ${resume.total_retards} retard(s)</strong><br>
+        <small>${resume.total_retards <= 2 ? '✅ Très bien' : '⚠️ À surveiller'}</small>
+      </div>
+    `;
+
+    const couleurWhatsApp = tauxEngagement >= 70 ? '#28a745' : tauxEngagement >= 40 ? '#ffc107' : '#dc3545';
+    analyse += `
+      <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid ${couleurWhatsApp};">
+        <strong style="color: ${couleurWhatsApp};">Engagement WhatsApp: ${tauxEngagement}%</strong><br>
+        <small>${membresActifs}/${membresTotaux} membres actifs</small>
+      </div>
+    `;
+
+    analyse += `
+      <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+        <strong style="color: #17a2b8;">Absences justifiées: ${resume.total_absences_justifiees}</strong><br>
+        <small>${resume.total_absences_justifiees === 0 ? '✅ Aucune' : '📋 Suivies'}</small>
+      </div>
+    `;
+
+    analyse += '</div>';
+    analyseDiv.innerHTML = analyse;
+  }
+
+  // REMPLACER chargerResumeEtendu par cette version
+  function chargerResumeEtendu() {
+    const params = getCurrentParamsNouvelles();
+    if (!params.groupe || !params.mois || !params.annee) return;
+
+    const url = `/api/resume-etendu?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}&reunion_id=${params.reunion || ''}`;
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        const resume = data.resume_global || {};
+        
+        const resumePresences = document.getElementById('resumePresences');
+        const resumeAbsences = document.getElementById('resumeAbsences');
+        const resumeRetards = document.getElementById('resumeRetards');
+        const resumeReactivite = document.getElementById('resumeReactivite');
+        
+        if (resumePresences) resumePresences.textContent = resume.total_presences || 0;
+        if (resumeAbsences) resumeAbsences.textContent = resume.total_absences_justifiees || 0;
+        if (resumeRetards) resumeRetards.textContent = resume.total_retards || 0;
+        if (resumeReactivite) resumeReactivite.textContent = resume.membres_actifs_whatsapp || 0;
+
+        donneesExport = {
+          presences: resume.total_presences || 0,
+          absences: resume.total_absences_justifiees || 0,
+          retards: resume.total_retards || 0,
+          reactiviteWhatsApp: resume.membres_actifs_whatsapp || 0,
+          periode: `${params.mois}/${params.annee}`,
+          groupe: params.groupe
+        };
+
+        fetch(`/api/reactivite?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}`)
+          .then(res => res.json())
+          .then(reactiviteData => {
+            const stats = reactiviteData.statistiques || {};
+            const detailsReactivite = Object.values(stats);
+            donneesExport.detailsReactivite = detailsReactivite;
+
+            fetch(`/api/membres?groupe_id=${params.groupe}`)
+              .then(res => res.json())
+              .then(membres => {
+                const membresTotaux = membres.length;
+                const membresActifs = Object.keys(stats).length;
+                
+                donneesExport.membresActifs = membresActifs;
+                donneesExport.membresTotaux = membresTotaux;
+
+                const scoreWhatsAppMoyen = membresTotaux > 0 ? (membresActifs / membresTotaux * 100).toFixed(1) : 0;
+
+                creerGraphiquePresences(
+                  resume.total_presences || 0,
+                  resume.total_absences_justifiees || 0,
+                  resume.total_retards || 0
+                );
+
+                creerGraphiqueEngagement(
+                  membresActifs,
+                  membresTotaux,
+                  parseFloat(scoreWhatsAppMoyen)
+                );
+
+                creerGraphiqueReactivite(detailsReactivite);
+                genererAnalyseTextuelle(resume, membresActifs, membresTotaux);
+              });
+          });
+      })
+      .catch(err => console.error('Erreur résumé étendu:', err));
+  }
+
+  async function exporterPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    doc.setFontSize(20);
+    doc.setTextColor(102, 126, 234);
+    doc.text('Rapport de Présences', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Période: ${donneesExport.periode}`, 105, 30, { align: 'center' });
+    
+    let y = 50;
+    doc.setFontSize(14);
+    doc.text('📊 Statistiques globales', 20, y);
+    
+    y += 10;
+    doc.setFontSize(11);
+    doc.text(`• Présences: ${donneesExport.presences}`, 30, y);
+    y += 7;
+    doc.text(`• Absences justifiées: ${donneesExport.absences}`, 30, y);
+    y += 7;
+    doc.text(`• Retards: ${donneesExport.retards}`, 30, y);
+    y += 7;
+    doc.text(`• Membres actifs WhatsApp: ${donneesExport.membresActifs}/${donneesExport.membresTotaux}`, 30, y);
+    
+    if (donneesExport.detailsReactivite && donneesExport.detailsReactivite.length > 0) {
+      y += 15;
+      doc.setFontSize(14);
+      doc.text('💬 Réactivité WhatsApp', 20, y);
+      
+      y += 10;
+      doc.setFontSize(10);
+      donneesExport.detailsReactivite.forEach(membre => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(`• ${membre.nom}: ${membre.total_activites} activités (Score: ${membre.score_total})`, 30, y);
+        y += 6;
+      });
+    }
+    
+    const canvas1 = document.getElementById('chartPresences');
+    const canvas2 = document.getElementById('chartEngagement');
+    
+    if (canvas1 && canvas2) {
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text('📈 Graphiques', 105, 20, { align: 'center' });
+      
+      const img1 = canvas1.toDataURL('image/png');
+      const img2 = canvas2.toDataURL('image/png');
+      
+      doc.addImage(img1, 'PNG', 15, 30, 85, 65);
+      doc.addImage(img2, 'PNG', 110, 30, 85, 65);
+    }
+    
+    doc.save(`rapport_${donneesExport.periode.replace('/', '-')}.pdf`);
+  }
+
+  function exporterExcel() {
+    let csv = 'Rapport de Présences\n\n';
+    csv += `Période,${donneesExport.periode}\n\n`;
+    
+    csv += 'Statistiques Globales\n';
+    csv += 'Indicateur,Valeur\n';
+    csv += `Présences,${donneesExport.presences}\n`;
+    csv += `Absences justifiées,${donneesExport.absences}\n`;
+    csv += `Retards,${donneesExport.retards}\n`;
+    csv += `Membres actifs WhatsApp,${donneesExport.membresActifs}/${donneesExport.membresTotaux}\n\n`;
+    
+    if (donneesExport.detailsReactivite && donneesExport.detailsReactivite.length > 0) {
+      csv += 'Réactivité WhatsApp Détaillée\n';
+      csv += 'Membre,Nombre d\'activités,Score total\n';
+      donneesExport.detailsReactivite.forEach(membre => {
+        csv += `"${membre.nom}",${membre.total_activites},${membre.score_total}\n`;
+      });
+    }
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `rapport_${donneesExport.periode.replace('/', '-')}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async function exporterGraphiques() {
+    const canvases = [
+      { canvas: document.getElementById('chartPresences'), nom: 'repartition_presences' },
+      { canvas: document.getElementById('chartEngagement'), nom: 'engagement_groupe' },
+      { canvas: document.getElementById('chartReactivite'), nom: 'reactivite_whatsapp' }
+    ];
+    
+    for (const item of canvases) {
+      if (item.canvas) {
+        const url = item.canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `${item.nom}_${donneesExport.periode.replace('/', '-')}.png`;
+        link.href = url;
+        link.click();
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+  }
+
+  // Event listeners pour exports
+  setTimeout(() => {
+    const btnPDF = document.getElementById('btnExportPDF');
+    const btnExcel = document.getElementById('btnExportExcel');
+    const btnGraphiques = document.getElementById('btnExportGraphiques');
+    
+    if (btnPDF) btnPDF.addEventListener('click', exporterPDF);
+    if (btnExcel) btnExcel.addEventListener('click', exporterExcel);
+    if (btnGraphiques) btnGraphiques.addEventListener('click', exporterGraphiques);
+  }, 1000);
+            
 
 
 });
