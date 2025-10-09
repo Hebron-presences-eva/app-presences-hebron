@@ -636,7 +636,86 @@
     </div>
   </div>
 
+
+
+
+
+
+  <!-- // ICI -->
+
+
+  <div id="adminBadge" style="display: none; background: linear-gradient(135deg, #ffd700, #ffed4e); padding: 10px; text-align: center; font-weight: bold; color: #333;">
+  🔑 Mode Administrateur - Accès complet à tous les groupes
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const membre = JSON.parse(localStorage.getItem("membre"));
+  if (membre && membre.role === 'admin') {
+    document.getElementById('adminBadge').style.display = 'block';
+  }
+});
+</script>
+
+
+<!-- // ICI -->
+ 
+
+
+
+
+
   <script>
+
+  // ===================================
+  // FONCTION D'AUTHENTIFICATION
+  // ===================================
+  function fetchAvecAuth(url, options = {}) {
+    const membre = JSON.parse(localStorage.getItem("membre"));
+    
+    if (!membre) {
+      alert("Session expirée, veuillez vous reconnecter");
+      window.location.href = "login.html";
+      return Promise.reject("Non authentifié");
+    }
+    
+    // Ajouter le header avec les données du membre
+    options.headers = {
+      ...options.headers,
+      'X-Membre-Data': JSON.stringify(membre)
+    };
+    
+    return fetch(url, options);
+  }
+
+  
+  // AJOUTER ICI
+  
+
+  // 🔄 Fonction pour réinitialiser le formulaire
+function resetFormulaire() {
+  // Réinitialiser la date
+  document.getElementById('datePresence').value = new Date().toISOString().split('T')[0];
+  
+  // Réinitialiser la réunion (par défaut : Culte de dimanche)
+  document.getElementById('reunionSelect').value = '1';
+  
+  // Décocher tous les cases à cocher
+  document.querySelectorAll("input[type='checkbox']:checked").forEach(checkbox => {
+    checkbox.checked = false;
+    checkbox.closest('tr').classList.remove('present-row');
+  });
+  
+  // Vider le tableau des membres (optionnel)
+  // Ou vous pouvez aussi réinitialiser la sélection du groupe
+  // document.getElementById('groupeSelect').value = '';
+  
+  console.log("✅ Formulaire réinitialisé");
+}
+
+
+
+
     // Vérification de la connexion
     const membreConnecte = JSON.parse(localStorage.getItem("membre"));
     if (!membreConnecte) {
@@ -644,24 +723,122 @@
       window.location.href = "login.html";
     }
 
+
+
+/*
+
     // Charger les groupes dans le menu déroulant
     function chargerGroupes() {
-      fetch("/api/groupes")
-        .then(res => res.json())
+      console.log("📍 Fonction chargerGroupes appelée");
+      
+      const membre = JSON.parse(localStorage.getItem("membre"));
+      console.log("👤 Membre récupéré:", membre);
+      
+      if (!membre) {
+        alert("Non connecté !");
+        window.location.href = "login.html";
+        return;
+      }
+      
+      console.log("🌐 Envoi requête /api/groupes...");
+      
+      fetchAvecAuth("/api/groupes")
+        .then(res => {
+          console.log("📡 Réponse reçue:", res.status);
+          return res.json();
+        })
         .then(groupes => {
+          console.log("📦 Groupes reçus:", groupes);
+          
           const groupeSelect = document.getElementById("groupeSelect");
+          
+          const groupesFiltres = membre.role === 'admin' 
+            ? groupes 
+            : groupes.filter(g => g.id === membre.groupe_id);
+          
+          console.log("✅ Groupes filtrés:", groupesFiltres);
+          
+          groupesFiltres.forEach(groupe => {
+            const option = document.createElement("option");
+            option.value = groupe.id;
+            option.textContent = groupe.nom;
+            groupeSelect.appendChild(option);
+          });
+          
+          // Présélectionner le groupe du membre
+          if (membre.role !== 'admin') {
+            groupeSelect.value = membre.groupe_id;
+            groupeSelect.disabled = true;
+          }
+        })
+        .catch(err => {
+          console.error("❌ Erreur complète:", err);
+          alert("❌ Erreur lors du chargement des groupes: " + err.message);
+        });
+    }
+
+
+*/
+
+
+
+    // Charger les groupes dans le menu déroulant
+    function chargerGroupes() {
+      const membre = JSON.parse(localStorage.getItem("membre"));
+      
+      if (!membre) {
+        alert("Non connecté !");
+        window.location.href = "login.html";
+        return;
+      }
+      
+      console.log("🔍 Chargement groupes pour:", membre.nom, "- Rôle:", membre.role);
+      
+      fetchAvecAuth("/api/groupes")
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(groupes => {
+          console.log("✅ Groupes reçus:", groupes);
+          
+          const groupeSelect = document.getElementById("groupeSelect");
+          
+          // Vider les options existantes (sauf la première)
+          groupeSelect.innerHTML = '<option value="">-- Choisir un groupe --</option>';
+          
+          if (groupes.length === 0) {
+            alert("Aucun groupe disponible pour votre compte");
+            return;
+          }
+          
+          // Ajouter les groupes reçus
           groupes.forEach(groupe => {
             const option = document.createElement("option");
             option.value = groupe.id;
             option.textContent = groupe.nom;
             groupeSelect.appendChild(option);
           });
+          
+          // Présélectionner et verrouiller pour les membres normaux
+          if (membre.role !== 'admin') {
+            groupeSelect.value = membre.groupe_id;
+            groupeSelect.disabled = true; // Empêcher la modification
+            console.log("🔒 Groupe verrouillé pour membre normal");
+          } else {
+            console.log("👑 Admin : tous les groupes accessibles");
+          }
         })
         .catch(err => {
-          console.error("Erreur lors du chargement des groupes:", err);
-          alert("❌ Erreur lors du chargement des groupes");
+          console.error("❌ Erreur lors du chargement des groupes:", err);
+          alert("Erreur lors du chargement des groupes : " + err.message);
         });
     }
+
+
+
 
     const tableBody = document.getElementById("membreTableBody");
 
@@ -673,7 +850,8 @@
         // Afficher un indicateur de chargement
         tableBody.innerHTML = '<tr><td colspan="2" class="empty-state"><span class="loading"></span> Chargement des membres...</td></tr>';
 
-        fetch(`/api/membres?groupe_id=${groupe_id}`)
+        // ✅ CORRECT - avec authentification
+         fetchAvecAuth(`/api/membres?groupe_id=${groupe_id}`)
           .then(res => res.json())
           .then(data => {
             tableBody.innerHTML = ""; // Vider l'indicateur de chargement
@@ -747,6 +925,10 @@
       loading.style.display = 'inline-block';
       btn.disabled = true;
 
+
+      /*
+
+      // AVANT
       fetch("/api/presences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -762,6 +944,30 @@
           btn.disabled = false;
           alert("✅ Présences enregistrées avec succès !");
         })
+
+        */
+
+
+        // ✅ APRÈS
+        fetch("/api/presences", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(donnees)
+        })
+          .then(res => res.json())
+          .then(result => {
+            localStorage.setItem("groupe", groupe_id);
+            localStorage.setItem("reunion", reunion_id);
+            localStorage.setItem("date", date);
+
+            loading.style.display = 'none';
+            btn.disabled = false;
+            alert("✅ Présences enregistrées avec succès !");
+            
+            // 🔄 RÉINITIALISATION À ZÉRO
+            resetFormulaire();
+          })
+
         .catch(err => {
           loading.style.display = 'none';
           btn.disabled = false;
@@ -800,6 +1006,8 @@
       window.location.href = `presences_annuelles.html?groupe=${groupeId}&mois=${mois}&annee=${annee}`;
     });
 
+
+    /*
     // Initialiser les données au chargement
     document.addEventListener('DOMContentLoaded', () => {
       chargerGroupes();
@@ -809,6 +1017,29 @@
       const dateString = today.toISOString().split('T')[0];
       document.getElementById('datePresence').value = dateString;
     });
+
+    */
+
+
+    // Définir la date d'aujourd'hui par défaut IMMÉDIATEMENT
+      const today = new Date();
+      const dateString = today.toISOString().split('T')[0];
+      const dateInput = document.getElementById('datePresence');
+      if (dateInput) {
+        dateInput.value = dateString;
+      }
+
+      // Charger les groupes APRÈS que le DOM soit prêt
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log("🔍 Début chargement groupes...");
+        chargerGroupes();
+      });
+
+
+
   </script>
+
+
+
 </body>
 </html>

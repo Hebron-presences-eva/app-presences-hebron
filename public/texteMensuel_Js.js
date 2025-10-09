@@ -1,6 +1,28 @@
 
 console.log("JS chargé !");
 
+// ===================================
+// FONCTION D'AUTHENTIFICATION
+// ===================================
+function fetchAvecAuth(url, options = {}) {
+  const membre = JSON.parse(localStorage.getItem("membre"));
+  
+  if (!membre) {
+    alert("Session expirée, veuillez vous reconnecter");
+    window.location.href = "login.html";
+    return Promise.reject("Non authentifié");
+  }
+  
+  // Ajouter le header avec les données du membre
+  options.headers = {
+    ...options.headers,
+    'X-Membre-Data': JSON.stringify(membre)
+  };
+  
+  return fetch(url, options);
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
   const moisSelect = document.getElementById("mois");
   const anneeSelect = document.getElementById("annee");
@@ -295,8 +317,8 @@ console.log("ID 4 (Groupe Personne):", reunionTypes['atelier']);
   }
 
   // Charger les groupes avec gestion d'erreur améliorée
-  fetch("/api/groupes")
-    .then(res => {
+  fetchAvecAuth("/api/groupes")
+  .then(res => {
       if (!res.ok) {
         throw new Error(`Erreur HTTP: ${res.status}`);
       }
@@ -381,7 +403,7 @@ console.log("ID 4 (Groupe Personne):", reunionTypes['atelier']);
       tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 20px;">🔄 Chargement des données...</td></tr>';
     }
 
-    fetch(url)
+    fetchAvecAuth(url)
       .then(res => {
         console.log("📡 Réponse API:", res.status, res.statusText);
         if (!res.ok) {
@@ -554,8 +576,8 @@ console.log("Nouvelle méthode (sans décalage):", extraireMoisSansDecalage(test
     const url = `/api/presences?groupe=${groupeId}&mois=${mois}&annee=${annee}&reunion_id=${reunionId}`;
     console.log("🌐 URL API:", url);
 
-    fetch(url)
-        .then(res => {
+    fetchAvecAuth(url)
+      .then(res => {
             if (!res.ok) {
                 console.error("❌ Erreur HTTP:", res.status, res.statusText);
                 throw new Error(`HTTP ${res.status}`);
@@ -696,7 +718,7 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
           : [{ membre_id: membreId, date_presence: date, reunion_id: reunionId }];
 
         try {
-          const response = await fetch("/api/presences", {
+          const response = await fetchAvecAuth("/api/presences", {
             method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
@@ -728,7 +750,7 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
 
     const url = `/api/presences?groupe=${groupeId}&mois=${mois}&annee=${annee}&reunion_id=${reunionId}`;
     
-    fetch(url)
+    fetchAvecAuth(url)
       .then(res => res.json())
       .then(data => {
         console.log("📈 Données reçues pour calcul:", data);
@@ -779,7 +801,7 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
   function afficherResumeMensuel(groupeId, mois, annee, reunionId) {
     const url = `/api/presences/resume?groupe=${groupeId}&mois=${mois}&annee=${annee}&reunion_id=${reunionId}`;
     
-    fetch(url)
+    fetchAvecAuth(url)
       .then(res => res.json())
       .then(data => {
         const texte = `
@@ -941,7 +963,7 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
       justification: justification
     };
 
-    fetch('/api/absences', {
+    fetchAvecAuth('/api/absences', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(donnees)
@@ -969,8 +991,9 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
 
     const url = `/api/absences?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}&reunion_id=${params.reunion || ''}`;
     
-    fetch(url)
+    fetchAvecAuth(url)
       .then(res => res.json())
+
       .then(absences => {
         const liste = document.getElementById('listeAbsences');
         if (!liste) return;
@@ -1043,7 +1066,7 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
       motif: motif
     };
 
-    fetch('/api/retards', {
+    fetchAvecAuth('/api/retards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(donnees)
@@ -1071,7 +1094,7 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
 
     const url = `/api/retards?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}&reunion_id=${params.reunion || ''}`;
     
-    fetch(url)
+    fetchAvecAuth(url)
       .then(res => res.json())
       .then(retards => {
         const liste = document.getElementById('listeRetards');
@@ -1148,7 +1171,7 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
       score_reactivite: parseInt(score)
     };
 
-    fetch('/api/reactivite', {
+    fetchAvecAuth('/api/reactivite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(donnees)
@@ -1243,7 +1266,7 @@ function chargerReactivite() {
 
   const url = `/api/reactivite?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}`;
   
-  fetch(url)
+  fetchAvecAuth(url)
     .then(res => res.json())
     .then(data => {
       const activites = data.activites || [];
@@ -1253,7 +1276,7 @@ function chargerReactivite() {
       if (!liste) return;
       
       // Récupérer tous les membres du groupe pour identifier les non-actifs
-      fetch(`/api/membres?groupe_id=${params.groupe}`)
+     fetchAvecAuth(`/api/membres?groupe_id=${params.groupe}`)
         .then(res => res.json())
         .then(tousMembres => {
           // Identifier les membres actifs et non-actifs
@@ -1349,7 +1372,7 @@ function chargerReactivite() {
 window.supprimerActiviteWhatsApp = function(id) {
   if (!confirm('Supprimer cette activité WhatsApp ?')) return;
   
-  fetch(`/api/reactivite/${id}`, { method: 'DELETE' })
+  fetchAvecAuth(`/api/reactivite/${id}`, { method: 'DELETE' })
     .then(res => res.json())
     .then(result => {
       if (result.success) {
@@ -1389,7 +1412,7 @@ window.supprimerActiviteWhatsApp = function(id) {
 
     const url = `/api/resume-etendu?groupe=${params.groupe}&mois=${params.mois}&annee=${params.annee}&reunion_id=${params.reunion || ''}`;
     
-    fetch(url)
+    fetchAvecAuth(url)
       .then(res => res.json())
       .then(data => {
         const resume = data.resume_global || {};
@@ -1441,7 +1464,7 @@ window.supprimerActiviteWhatsApp = function(id) {
   window.supprimerAbsence = function(id) {
     if (!confirm('Supprimer cette absence ?')) return;
 
-    fetch(`/api/absences/${id}`, { method: 'DELETE' })
+    fetchAvecAuth(`/api/absences/${id}`, { method: 'DELETE' })
       .then(res => res.json())
       .then(result => {
         if (result.success) {
@@ -1455,7 +1478,7 @@ window.supprimerActiviteWhatsApp = function(id) {
   window.supprimerRetard = function(id) {
     if (!confirm('Supprimer ce retard ?')) return;
     
-    fetch(`/api/retards/${id}`, { method: 'DELETE' })
+    fetchAvecAuth(`/api/retards/${id}`, { method: 'DELETE' })
       .then(res => res.json())
       .then(result => {
         if (result.success) {
