@@ -9,6 +9,11 @@ require('dotenv').config();
 // SUPABASE CONFIGURATION
 const { createClient } = require('@supabase/supabase-js');
 
+
+const bcrypt = require('bcrypt');
+const SALT_ROUNDS = 10; // Nombre de tours de hashage
+
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
@@ -87,44 +92,9 @@ app.use((req, res, next) => {
 // ROUTES D'AUTHENTIFICATION
 // ===========================================
 
+
+
 /*
-
-
-app.post('/api/login', async (req, res) => {
-  const { identifiant, mot_de_passe } = req.body;
-  
-  if (!identifiant || !mot_de_passe) {
-    return res.status(400).json({ message: "Identifiant et mot de passe requis" });
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('membres')
-      .select('id, nom, groupe_id')
-      .eq('identifiant', identifiant)
-      .eq('mot_de_passe', mot_de_passe);
-    
-    if (error) {
-      console.error("❌ Erreur Supabase login:", error);
-      return res.status(500).json({ message: "Erreur serveur" });
-    }
-    
-    if (data && data.length > 0) {
-      console.log("✅ Connexion réussie pour:", identifiant);
-      return res.json(data[0]);
-    }
-    
-    console.log("❌ Tentative de connexion échouée pour:", identifiant);
-    res.status(401).json({ message: "Identifiants invalides" });
-  } catch (err) {
-    console.error("❌ Erreur lors de la connexion:", err);
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
-
-*/
-
-
 
 app.post('/api/login', async (req, res) => {
   const { identifiant, mot_de_passe } = req.body;
@@ -157,6 +127,130 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
+*/
+
+
+
+app.post('/api/login', async (req, res) => {
+  const { identifiant, mot_de_passe } = req.body;
+  
+  if (!identifiant || !mot_de_passe) {
+    return res.status(400).json({ message: "Identifiant et mot de passe requis" });
+  }
+
+  try {
+    // Récupérer le membre avec son mot de passe hashé
+    const { data, error } = await supabase
+      .from('membres')
+      .select('id, nom, groupe_id, role, mot_de_passe')
+      .eq('identifiant', identifiant)
+      .single();
+    
+    if (error || !data) {
+      console.log("❌ Membre non trouvé:", identifiant);
+      return res.status(401).json({ message: "Identifiants invalides" });
+    }
+    
+    // Vérifier le mot de passe avec bcrypt
+    const motDePasseValide = await bcrypt.compare(mot_de_passe, data.mot_de_passe);
+    
+    if (!motDePasseValide) {
+      console.log("❌ Mot de passe incorrect pour:", identifiant);
+      return res.status(401).json({ message: "Identifiants invalides" });
+    }
+    
+    console.log("✅ Connexion réussie pour:", identifiant, "Role:", data.role);
+    
+    // Retourner les infos sans le mot de passe
+    const { mot_de_passe: _, ...membreSansMotDePasse } = data;
+    return res.json(membreSansMotDePasse);
+    
+  } catch (err) {
+    console.error("❌ Erreur lors de la connexion:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
+
+
+// ===========================================
+// ROUTE DE MIGRATION - HASHAGE DES MOTS DE PASSE
+// ⚠️ À SUPPRIMER APRÈS UTILISATION
+// ===========================================
+
+// ICI
+
+
+
+app.post('/api/admin/hash-passwords', async (req, res) => {
+  const { admin_secret } = req.body;
+  
+  // Protection : nécessite un secret (CHANGEZ CE SECRET !)
+  if (admin_secret !== 'MonSecretSuper123!@#') {
+    return res.status(403).json({ error: "Accès refusé" });
+  }
+
+  try {
+    console.log("🔐 Début du hashage des mots de passe...");
+    
+    // Récupérer tous les membres
+    const { data: membres, error } = await supabase
+      .from('membres')
+      .select('id, identifiant, mot_de_passe');
+    
+    if (error) {
+      console.error("❌ Erreur récupération membres:", error);
+      return res.status(500).json({ error: "Erreur récupération membres" });
+    }
+
+    let compteur = 0;
+    let dejaHashes = 0;
+    
+    for (const membre of membres) {
+      // Vérifier si le mot de passe est déjà hashé (commence par $2b$)
+      if (membre.mot_de_passe.startsWith('$2b$')) {
+        console.log(`⏭️  ${membre.identifiant} : déjà hashé`);
+        dejaHashes++;
+        continue;
+      }
+      
+      // Hasher le mot de passe
+      const hashedPassword = await bcrypt.hash(membre.mot_de_passe, SALT_ROUNDS);
+      
+      // Mettre à jour dans la base
+      const { error: updateError } = await supabase
+        .from('membres')
+        .update({ mot_de_passe: hashedPassword })
+        .eq('id', membre.id);
+      
+      if (updateError) {
+        console.error(`❌ Erreur pour ${membre.identifiant}:`, updateError);
+      } else {
+        console.log(`✅ ${membre.identifiant} : mot de passe hashé`);
+        compteur++;
+      }
+    }
+    
+    console.log(`✅ Migration terminée : ${compteur} mots de passe hashés, ${dejaHashes} déjà hashés`);
+    res.json({ 
+      success: true, 
+      message: `${compteur} mots de passe mis à jour`,
+      total: membres.length,
+      nouveaux: compteur,
+      existants: dejaHashes
+    });
+    
+  } catch (err) {
+    console.error("❌ Erreur migration:", err);
+    res.status(500).json({ error: "Erreur serveur", details: err.message });
+  }
+});
+
+
+
+// ICI
 
 
 
@@ -210,38 +304,6 @@ function verifierAccesGroupe(req, res, next) {
 // ===========================================
 // ROUTES POUR LES GROUPES
 // ===========================================
-
-
-/*
-app.get('/api/groupes', verifierPermissions, verifierAccesGroupe, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('groupes')
-      .select('id, libelle')
-      .order('libelle', { ascending: true });
-    
-    if (error) {
-      console.error("❌ Erreur récupération groupes:", error);
-      return res.status(500).json({ error: "Erreur récupération groupes" });
-    }
-    
-    console.log(`✅ ${data.length} groupes récupérés`);
-    // ⚠️ TRANSFORMATION NÉCESSAIRE : libelle → nom pour le frontend
-    const groupesTransformed = data.map(groupe => ({
-      id: groupe.id,
-      nom: groupe.libelle  // Transformer libelle en nom
-    }));
-    
-    res.json(groupesTransformed);
-  } catch (err) {
-    console.error("❌ Erreur récupération groupes:", err);
-    res.status(500).json({ error: "Erreur récupération groupes" });
-  }
-});
-
-*/
-
-
 
 
 app.get('/api/groupes', verifierPermissions, async (req, res) => {
