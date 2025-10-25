@@ -834,40 +834,237 @@ console.log(`Jour extrait: ${extraireJourSansDecalage(feb4)} (devrait être 4)`)
     }
   });
 
-  // Export CSV
-  const btnExportCSV = document.getElementById("btnExportCSV");
-  if (btnExportCSV) {
-    btnExportCSV.addEventListener("click", () => {
-      const table = document.getElementById("presenceTable");
-      if (!table) {
-        alert("Tableau non trouvé pour l'export");
-        return;
-      }
-      
-      const rows = Array.from(table.rows);
-      
-      const csvContent = rows.map(row => {
-        return Array.from(row.cells).map(cell => {
-          return `"${cell.textContent.replace(/"/g, '""')}"`;
-        }).join(",");
-      }).join("\n");
+  // ========================================
+// EXPORT CSV AMÉLIORÉ - VERSION DÉTAILLÉE
+// ========================================
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
+const btnExportCSV = document.getElementById("btnExportCSV");
+if (btnExportCSV) {
+  btnExportCSV.addEventListener("click", async () => {
+    const groupeId = groupeSelect?.value;
+    const reunionId = reunionSelect?.value;
+    const mois = moisSelect?.value;
+    const annee = anneeSelect?.value;
+
+    if (!groupeId || !reunionId || !mois || !annee) {
+      alert("⚠️ Veuillez sélectionner un groupe, une réunion, un mois et une année");
+      return;
+    }
+
+    try {
+      // Récupérer les données
+      const url = `/api/presences?groupe=${groupeId}&mois=${mois}&annee=${annee}&reunion_id=${reunionId}`;
+      const response = await fetchAvecAuth(url);
+      const data = await response.json();
+
+      const membres = data.membres || [];
+      const presences = data.presences || [];
+
+      // Calculer les statistiques
+      const datesReunions = [...new Set(presences.map(p => p.date_presence.split('T')[0]))];
+      const totalReunions = datesReunions.length;
+
+      // Construire le CSV
+      let csv = 'RAPPORT DE PRESENCES MENSUEL\n\n';
+      csv += `Période,${moisNoms[mois - 1]} ${annee}\n`;
+      csv += `Groupe,${groupeSelect.options[groupeSelect.selectedIndex].text}\n`;
+      csv += `Réunion,${reunionSelect.options[reunionSelect.selectedIndex].text}\n`;
+      csv += `Total réunions,${totalReunions}\n\n`;
+
+      // En-têtes du tableau
+      csv += 'Membre,Présences,Total Réunions,Taux (%),Statut\n';
+
+      // Données des membres
+      membres.forEach(membre => {
+        const presencesMembre = presences.filter(p => 
+          parseInt(p.membre_id, 10) === membre.id
+        ).length;
+
+        const taux = totalReunions > 0 
+          ? Math.round((presencesMembre / totalReunions) * 100) 
+          : 0;
+
+        const statut = presencesMembre === totalReunions 
+          ? 'Assidu' 
+          : presencesMembre > 0 
+            ? 'Présent' 
+            : 'Absent';
+
+        csv += `"${membre.nom}",${presencesMembre},${totalReunions},${taux}%,${statut}\n`;
+      });
+
+      // Statistiques globales
+      const presentsUniques = [...new Set(presences.map(p => p.membre_id))].length;
+      const absents = membres.length - presentsUniques;
+      const tauxGlobal = membres.length > 0 
+        ? Math.round((presentsUniques / membres.length) * 100) 
+        : 0;
+
+      csv += '\nSTATISTIQUES GLOBALES\n';
+      csv += `Total membres,${membres.length}\n`;
+      csv += `Membres présents,${presentsUniques}\n`;
+      csv += `Membres absents,${absents}\n`;
+      csv += `Taux de présence global,${tauxGlobal}%\n`;
+
+      // Télécharger le fichier
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const urlBlob = URL.createObjectURL(blob);
       
-      link.setAttribute("href", url);
-      link.setAttribute("download", `presences_${groupeSelect?.value || 'groupe'}_${moisSelect?.value || 'mois'}_${anneeSelect?.value || 'annee'}.csv`);
-      link.style.visibility = "hidden";
+      link.setAttribute('href', urlBlob);
+      link.setAttribute('download', `presences_${groupeSelect.options[groupeSelect.selectedIndex].text}_${moisNoms[mois - 1]}_${annee}.csv`);
+      link.style.visibility = 'hidden';
       
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    });
-  }
+
+      console.log("✅ Export CSV réussi");
+    } catch (err) {
+      console.error("❌ Erreur export CSV:", err);
+      alert("Erreur lors de l'export CSV");
+    }
+  });
+}
 
 
+// ========================================
+// EXPORT CSV ÉTENDU (NOUVEAU CODE À AJOUTER)
+// ========================================
 
+const btnExportCSVEtendu = document.getElementById("btnExportCSVEtendu");
+if (btnExportCSVEtendu) {
+  btnExportCSVEtendu.addEventListener("click", async () => {
+    const groupeId = groupeSelect?.value;
+    const mois = moisSelect?.value;
+    const annee = anneeSelect?.value;
+    const reunionId = reunionSelect?.value;
+
+    if (!groupeId || !mois || !annee) {
+      alert("⚠️ Veuillez sélectionner un groupe, un mois et une année");
+      return;
+    }
+
+    try {
+      console.log("📊 Génération export CSV complet...");
+
+      // Récupérer toutes les données en parallèle
+      const [presencesRes, absencesRes, retardsRes, reactiviteRes, membresRes] = await Promise.all([
+        fetchAvecAuth(`/api/presences?groupe=${groupeId}&mois=${mois}&annee=${annee}&reunion_id=${reunionId || 1}`),
+        fetchAvecAuth(`/api/absences?groupe=${groupeId}&mois=${mois}&annee=${annee}&reunion_id=${reunionId || ''}`),
+        fetchAvecAuth(`/api/retards?groupe=${groupeId}&mois=${mois}&annee=${annee}&reunion_id=${reunionId || ''}`),
+        fetchAvecAuth(`/api/reactivite?groupe=${groupeId}&mois=${mois}&annee=${annee}`),
+        fetchAvecAuth(`/api/membres?groupe_id=${groupeId}`)
+      ]);
+
+      const presencesData = await presencesRes.json();
+      const absencesData = await absencesRes.json();
+      const retardsData = await retardsRes.json();
+      const reactiviteData = await reactiviteRes.json();
+      const membresData = await membresRes.json();
+
+      const presences = presencesData.presences || [];
+      const absences = absencesData || [];
+      const retards = retardsData || [];
+      const activites = reactiviteData.activites || [];
+      const membres = membresData || [];
+
+      // Calculer le total de réunions
+      const datesReunions = [...new Set(presences.map(p => p.date_presence.split('T')[0]))];
+      const totalReunions = datesReunions.length;
+
+      // Construire le CSV
+      let csv = 'RAPPORT COMPLET DE PRESENCES\n\n';
+      csv += `Période,${moisNoms[mois - 1]} ${annee}\n`;
+      csv += `Groupe,${groupeSelect.options[groupeSelect.selectedIndex]?.text || groupeId}\n`;
+      csv += `Réunion,${reunionSelect.options[reunionSelect.selectedIndex]?.text || 'Toutes'}\n`;
+      csv += `Total réunions,${totalReunions}\n\n`;
+
+      // En-têtes du tableau principal
+      csv += 'Membre,Présences,Taux %,Absences Justifiées,Retards,Activités WhatsApp,Score Global\n';
+
+      // Données par membre
+      membres.forEach(membre => {
+        const nbPresences = presences.filter(p => parseInt(p.membre_id) === membre.id).length;
+        const nbAbsences = absences.filter(a => a.membre_id === membre.id).length;
+        const nbRetards = retards.filter(r => r.membre_id === membre.id).length;
+        const nbActivites = activites.filter(a => a.membre_id === membre.id).length;
+        
+        // Taux de présence
+        const taux = totalReunions > 0 ? Math.round((nbPresences / totalReunions) * 100) : 0;
+        
+        // Score global (sur 100)
+        const scorePresence = taux;
+        const penaliteAbsences = nbAbsences * 5;
+        const penaliteRetards = nbRetards * 2;
+        const bonusWhatsApp = Math.min(20, nbActivites * 3); // Max 20 points bonus
+        const scoreGlobal = Math.max(0, Math.min(100, scorePresence - penaliteAbsences - penaliteRetards + bonusWhatsApp));
+
+        csv += `"${membre.nom}",${nbPresences},${taux}%,${nbAbsences},${nbRetards},${nbActivites},${scoreGlobal}\n`;
+      });
+
+      // Statistiques globales
+      const presentsUniques = [...new Set(presences.map(p => p.membre_id))].length;
+      const absentsTotal = membres.length - presentsUniques;
+      const tauxGlobal = membres.length > 0 ? Math.round((presentsUniques / membres.length) * 100) : 0;
+
+      csv += '\nSTATISTIQUES GLOBALES\n';
+      csv += `Total membres,${membres.length}\n`;
+      csv += `Membres ayant assisté,${presentsUniques}\n`;
+      csv += `Membres jamais présents,${absentsTotal}\n`;
+      csv += `Taux de participation global,${tauxGlobal}%\n`;
+      csv += `Total absences justifiées,${absences.length}\n`;
+      csv += `Total retards,${retards.length}\n`;
+      csv += `Total activités WhatsApp,${activites.length}\n`;
+
+      // Section détails des absences
+      if (absences.length > 0) {
+        csv += '\nDÉTAILS DES ABSENCES JUSTIFIÉES\n';
+        csv += 'Membre,Date,Motif,Justification\n';
+        absences.forEach(absence => {
+          const membreNom = membres.find(m => m.id === absence.membre_id)?.nom || 'Inconnu';
+          const date = new Date(absence.date_absence).toLocaleDateString('fr-FR');
+          csv += `"${membreNom}",${date},"${absence.motif || 'Non précisé'}","${absence.justification || ''}"\n`;
+        });
+      }
+
+      // Section détails des retards
+      if (retards.length > 0) {
+        csv += '\nDÉTAILS DES RETARDS\n';
+        csv += 'Membre,Date,Durée (min),Motif\n';
+        retards.forEach(retard => {
+          const membreNom = membres.find(m => m.id === retard.membre_id)?.nom || 'Inconnu';
+          const date = new Date(retard.date_retard).toLocaleDateString('fr-FR');
+          csv += `"${membreNom}",${date},${retard.duree_retard || '?'},"${retard.motif || 'Non précisé'}"\n`;
+        });
+      }
+
+      // Télécharger le fichier
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const urlBlob = URL.createObjectURL(blob);
+      
+      const nomFichier = `rapport_complet_${groupeSelect.options[groupeSelect.selectedIndex]?.text || 'groupe'}_${moisNoms[mois - 1]}_${annee}.csv`;
+      
+      link.setAttribute('href', urlBlob);
+      link.setAttribute('download', nomFichier);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log("✅ Export CSV complet réussi");
+      alert(`✅ Export réussi !\nFichier : ${nomFichier}`);
+
+    } catch (err) {
+      console.error("❌ Erreur export CSV étendu:", err);
+      alert("❌ Erreur lors de l'export CSV complet : " + err.message);
+    }
+  });
+}
+
+console.log("✅ Export CSV Étendu configuré");
 
 
   // ===========================================
@@ -1996,6 +2193,97 @@ window.supprimerActiviteWhatsApp = function(id) {
     if (btnGraphiques) btnGraphiques.addEventListener('click', exporterGraphiques);
   }, 1000);
             
+
+
+// ========================================
+// EXPORT CSV ANNUEL (12 mois)
+// ========================================
+
+const btnExportAnnuel = document.getElementById("btnExportAnnuel");
+if (btnExportAnnuel) {
+  btnExportAnnuel.addEventListener("click", async () => {
+    const groupeId = groupeSelect?.value;
+    const reunionId = reunionSelect?.value;
+    const annee = anneeSelect?.value;
+
+    if (!groupeId || !reunionId || !annee) {
+      alert("⚠️ Veuillez sélectionner un groupe, une réunion et une année");
+      return;
+    }
+
+    try {
+      console.log("📊 Génération export annuel...");
+
+      // Récupérer les données annuelles
+      const url = `/api/presences/annuel?groupe=${groupeId}&annee=${annee}&reunion_id=${reunionId}`;
+      const response = await fetchAvecAuth(url);
+      const data = await response.json();
+
+      const membres = data.membres || [];
+      const donnees = data.donnees || {};
+
+      // Construire le CSV
+      let csv = 'RAPPORT ANNUEL DES PRESENCES\n\n';
+      csv += `Année,${annee}\n`;
+      csv += `Groupe,${groupeSelect.options[groupeSelect.selectedIndex].text}\n`;
+      csv += `Réunion,${reunionSelect.options[reunionSelect.selectedIndex].text}\n\n`;
+
+      // En-têtes
+      csv += 'Membre';
+      moisNoms.forEach(mois => {
+        csv += `,${mois}`;
+      });
+      csv += ',Total,Moyenne\n';
+
+      // Données par membre
+      membres.forEach(membre => {
+        csv += `"${membre.nom}"`;
+        let totalPresences = 0;
+
+        moisNoms.forEach((_, moisIndex) => {
+          const moisNum = moisIndex + 1;
+          const presencesMois = donnees[moisNum]?.presences_par_membre?.[membre.id] || 0;
+          totalPresences += presencesMois;
+          csv += `,${presencesMois}`;
+        });
+
+        const moyenne = Math.round(totalPresences / 12);
+        csv += `,${totalPresences},${moyenne}\n`;
+      });
+
+      // Statistiques mensuelles
+      csv += '\nSTATISTIQUES MENSUELLES\n';
+      csv += 'Mois,Total Présences\n';
+      
+      moisNoms.forEach((mois, moisIndex) => {
+        const moisNum = moisIndex + 1;
+        let totalMois = 0;
+        membres.forEach(membre => {
+          totalMois += donnees[moisNum]?.presences_par_membre?.[membre.id] || 0;
+        });
+        csv += `${mois},${totalMois}\n`;
+      });
+
+      // Télécharger
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const urlBlob = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', urlBlob);
+      link.setAttribute('download', `presences_annuelles_${annee}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log("✅ Export annuel réussi");
+    } catch (err) {
+      console.error("❌ Erreur export annuel:", err);
+      alert("Erreur lors de l'export annuel");
+    }
+  });
+}
 
 
 });
